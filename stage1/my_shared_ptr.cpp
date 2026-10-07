@@ -1,204 +1,313 @@
-#define _CRTDBG_MAP_ALLOC
+ï»¿#define _CRTDBG_MAP_ALLOC
 #include<iostream>
 #include<cstdlib>
 #include<crtdbg.h> 
-
-class SharedPtr {
-public:
-	explicit SharedPtr(int* p = nullptr)
-		:m_ptr(p), m_cb(nullptr)
-	{
-		if (m_ptr != nullptr) {
-			m_cb=new long(1);
-		}
-	}
-
-	SharedPtr(const SharedPtr& other)
-		:m_ptr(other.m_ptr), m_cb(other.m_cb)
-	{
-		if(other.m_cb!=nullptr)
-			(*m_cb)++;
-	}
-	SharedPtr& operator=(const SharedPtr& other) {
-		if (this == &other) return *this;
-		release();
-		m_ptr = other.m_ptr;
-		m_cb = other.m_cb;
-		if (other.m_cb != nullptr) {			
-			(*m_cb)++;
-		}
-		return *this;
-	}
-	SharedPtr(SharedPtr&& other) noexcept {
-		m_ptr = other.m_ptr;
-		m_cb = other.m_cb;
-		other.m_cb = nullptr;
-		other.m_ptr = nullptr;
-	}
-
-	SharedPtr& operator=(SharedPtr&& other) noexcept {
-		if (this == &other) {
-			return *this;
-		}
-		release();
-		m_ptr = other.m_ptr;
-		m_cb = other.m_cb;
-		other.m_cb = nullptr;
-		other.m_ptr = nullptr;
-		return *this;
-	}
-	void reset(int* ptr=nullptr) {	//´ı´¦Àía.reset(a.get());
-		release();
-		m_ptr = ptr;
-		if (m_ptr != nullptr) {
-			m_cb = new long(1);
-		}
-		else m_cb = nullptr;
-	}
-
-	~SharedPtr() {
-		release();
-	}
-
-	int* get() const {
-		return m_ptr;
-	}
-	long use_count() const {
-		return m_cb ? *m_cb : 0;
-	}
-	
-private:
-
-	void release() {
-		if (m_cb == nullptr) return;
-		--(*m_cb);
-		if (*m_cb == 0) {
-			delete m_ptr;
-			delete m_cb;
-			m_ptr = nullptr;
-			m_cb = nullptr;
-		}
-	}
-	int* m_ptr = nullptr;
-	long* m_cb = nullptr;
-};
-
+#include <cstddef>      // std::nullptr_t
+#include"my_shared_ptr.h"
 
 
 
 int main() {
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	std::cout << "=== ²âÊÔ1£º¹¹Ôì ===\n";
+	/*
+	std::cout << "=== æµ‹è¯•1ï¼šæ„é€  ===\n";
 	{
-		SharedPtr a(new int(42));
-		std::cout << "a.use_count() = " << a.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "*a.get() = " << *a.get() << "  (ÆÚÍû 42)\n";
-	}   // a ³ö×÷ÓÃÓò£¬Îö¹¹
+		SharedPtr<int> a(new int(42));
+		std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "*a.get() = " << *a.get() << "  (æœŸæœ› 42)\n";
+	}   // a å‡ºä½œç”¨åŸŸï¼Œææ„
 
-	std::cout << "\n=== ²âÊÔ2£º¿½±´ ===\n";
+	std::cout << "\n=== æµ‹è¯•2ï¼šæ‹·è´ ===\n";
 	{
-		SharedPtr a(new int(42));
-		SharedPtr b = a;                       // ¿½±´¹¹Ôì
-		std::cout << "a.use_count() = " << a.use_count() << "  (ÆÚÍû 2)\n";
-		std::cout << "b.use_count() = " << b.use_count() << "  (ÆÚÍû 2)\n";
-		std::cout << "a.get() == b.get() ? " << (a.get() == b.get()) << "  (ÆÚÍû 1)\n";
-	}   // Á½¸ö¶¼³ö×÷ÓÃÓò
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> b = a;                       // æ‹·è´æ„é€ 
+		std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 2)\n";
+		std::cout << "b.use_count() = " << b.use_count() << "  (æœŸæœ› 2)\n";
+		std::cout << "a.get() == b.get() ? " << (a.get() == b.get()) << "  (æœŸæœ› 1)\n";
+	}   // ä¸¤ä¸ªéƒ½å‡ºä½œç”¨åŸŸ
 
-	std::cout << "\n=== ²âÊÔ3£ºÆäÖĞÒ»¸öÏÈÎö¹¹£¬ÁíÒ»¸ö»¹ÄÜÓÃ ===\n";
+	std::cout << "\n=== æµ‹è¯•3ï¼šå…¶ä¸­ä¸€ä¸ªå…ˆææ„ï¼Œå¦ä¸€ä¸ªè¿˜èƒ½ç”¨ ===\n";
 	{
-		SharedPtr a(new int(7));
+		SharedPtr<int> a(new int(7));
 		{
-			SharedPtr b = a;
-			std::cout << "ÄÚ²ã£ºuse_count = " << a.use_count() << "  (ÆÚÍû 2)\n";
-		}   // b ÏÈÎö¹¹£¬¼ÆÊı»Øµ½ 1
-		std::cout << "Íâ²ã£ºuse_count = " << a.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "*a.get() = " << *a.get() << "  (ÆÚÍû 7£¬ÇÒ²»±À)\n";
-		// Èç¹ûÕâÀïÄÜÕı³£´òÓ¡ 7£¬ËµÃ÷ b Îö¹¹Ê±Ã»ÓĞÎóÉ¾¶ÔÏó ¡û Õâ¾ÍÊÇ v1 µÄºËĞÄÑéÊÕ
+			SharedPtr<int> b = a;
+			std::cout << "å†…å±‚ï¼šuse_count = " << a.use_count() << "  (æœŸæœ› 2)\n";
+		}   // b å…ˆææ„ï¼Œè®¡æ•°å›åˆ° 1
+		std::cout << "å¤–å±‚ï¼šuse_count = " << a.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "*a.get() = " << *a.get() << "  (æœŸæœ› 7ï¼Œä¸”ä¸å´©)\n";
+		// å¦‚æœè¿™é‡Œèƒ½æ­£å¸¸æ‰“å° 7ï¼Œè¯´æ˜ b ææ„æ—¶æ²¡æœ‰è¯¯åˆ å¯¹è±¡ â† è¿™å°±æ˜¯ v1 çš„æ ¸å¿ƒéªŒæ”¶
 	}
-	std::cout << "\n=== ²âÊÔ4£ºreset ===\n";
+	std::cout << "\n=== æµ‹è¯•4ï¼šreset ===\n";
 	{
-		SharedPtr a(new int(42));
-		std::cout << "reset Ç°£ºuse_count = " << a.use_count() << "  (ÆÚÍû 1)\n";
+		SharedPtr<int> a(new int(42));
+		std::cout << "reset å‰ï¼šuse_count = " << a.use_count() << "  (æœŸæœ› 1)\n";
 		a.reset(new int(99));
-		std::cout << "reset ºó£ºuse_count = " << a.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "*a.get() = " << *a.get() << "  (ÆÚÍû 99)\n";
+		std::cout << "reset åï¼šuse_count = " << a.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "*a.get() = " << *a.get() << "  (æœŸæœ› 99)\n";
 	}
 
-	std::cout << "\n=== ²âÊÔ5£ºreset(nullptr) ===\n";
+	std::cout << "\n=== æµ‹è¯•5ï¼šreset(nullptr) ===\n";
 	{
-		SharedPtr a(new int(5));
+		SharedPtr<int> a(new int(5));
 		a.reset(nullptr);
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 0)\n";
-		std::cout << "get() == nullptr ? " << (a.get() == nullptr) << "  (ÆÚÍû 1)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 0)\n";
+		std::cout << "get() == nullptr ? " << (a.get() == nullptr) << "  (æœŸæœ› 1)\n";
 	}
 
-	std::cout << "\n=== ²âÊÔ6£º¿Õ¶ÔÏó reset ===\n";
+	std::cout << "\n=== æµ‹è¯•6ï¼šç©ºå¯¹è±¡ reset ===\n";
 	{
-		SharedPtr a;
+		SharedPtr<int> a;
 		a.reset(new int(8));
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "*a.get() = " << *a.get() << "  (ÆÚÍû 8)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "*a.get() = " << *a.get() << "  (æœŸæœ› 8)\n";
 	}
-	std::cout << "\n=== ²âÊÔ7£º¿½±´¸³Öµ»ù±¾¹¦ÄÜ ===\n";
+	std::cout << "\n=== æµ‹è¯•7ï¼šæ‹·è´èµ‹å€¼åŸºæœ¬åŠŸèƒ½ ===\n";
 	{
-		SharedPtr a(new int(42));
-		SharedPtr b(new int(7));
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> b(new int(7));
 		b = a;
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 2)\n";
-		std::cout << "use_count = " << b.use_count() << "  (ÆÚÍû 2)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 2)\n";
+		std::cout << "use_count = " << b.use_count() << "  (æœŸæœ› 2)\n";
 	}
-	std::cout << "\n=== ²âÊÔ8£º×ÔÎÒ¸³Öµ a = a ===\n";
+	std::cout << "\n=== æµ‹è¯•8ï¼šè‡ªæˆ‘èµ‹å€¼ a = a ===\n";
 	{
-		SharedPtr a(new int(42));
+		SharedPtr<int> a(new int(42));
 		a = a;
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 1)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 1)\n";
 	}
-	std::cout << "\n=== ²âÊÔ9£ºÁ´Ê½¸³Öµ a = b = c ===\n";
+	std::cout << "\n=== æµ‹è¯•9ï¼šé“¾å¼èµ‹å€¼ a = b = c ===\n";
 	{
-		SharedPtr a(new int(42));
-		SharedPtr b(new int(7));
-		SharedPtr c(new int(8));
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> b(new int(7));
+		SharedPtr<int> c(new int(8));
 		a = b = c;
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 3)\n";
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 3)\n";
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 3)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 3)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 3)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 3)\n";
 	}
-	std::cout << "\n=== ²âÊÔ10£º¿ÕÖµ¸³Öµ a = empty ===\n";
+	std::cout << "\n=== æµ‹è¯•10ï¼šç©ºå€¼èµ‹å€¼ a = empty ===\n";
 	{
-		SharedPtr a(new int(42));
-		SharedPtr empty;
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> empty;
 		a = empty;
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 0)\n";
-		std::cout << "get() == nullptr ? " << (a.get() == nullptr) << "  (ÆÚÍû 1)\n";
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 0)\n";
+		std::cout << "get() == nullptr ? " << (a.get() == nullptr) << "  (æœŸæœ› 1)\n";
 	}
-	std::cout << "\n=== ²âÊÔ11£º¸³ÖµÒ»¸öÁÙÊ±¹¹ÔìµÄ¿Õ¶ÔÏó£¨¸üÕæÊµµÄ³¡¾°£©===\n";
+	std::cout << "\n=== æµ‹è¯•11ï¼šèµ‹å€¼ä¸€ä¸ªä¸´æ—¶æ„é€ çš„ç©ºå¯¹è±¡ï¼ˆæ›´çœŸå®çš„åœºæ™¯ï¼‰===\n";
 	{
-		SharedPtr a(new int(42));
-		a = SharedPtr();        // ÓÒ²àÊÇ"¸ÕÔì³öÀ´µÄ¿Õ¶ÔÏó"£¬¸³ÖµºóÁ¢¿ÌËÀÍö
-		std::cout << "use_count = " << a.use_count() << "  (ÆÚÍû 0)\n";
+		SharedPtr<int> a(new int(42));
+		a = SharedPtr<int>();        // å³ä¾§æ˜¯"åˆšé€ å‡ºæ¥çš„ç©ºå¯¹è±¡"ï¼Œèµ‹å€¼åç«‹åˆ»æ­»äº¡
+		std::cout << "use_count = " << a.use_count() << "  (æœŸæœ› 0)\n";
 	}
-	std::cout << "\n=== ²âÊÔ12£ºÒÆ¶¯¹¹Ôì ===\n";
+	std::cout << "\n=== æµ‹è¯•12ï¼šç§»åŠ¨æ„é€  ===\n";
 	{
-		SharedPtr a(new int(42));
-		std::cout << "ÒÆ¶¯Ç°£ºa.use_count() = " << a.use_count() << "  (ÆÚÍû 1)\n";
-		SharedPtr b = std::move(a);                  // ÒÆ¶¯¹¹Ôì
-		std::cout << "ÒÆ¶¯ºó£ºa.use_count() = " << a.use_count() << "  (ÆÚÍû 0£¬±»ÌÍ¿Õ)\n";
-		std::cout << "ÒÆ¶¯ºó£ºa.get() == nullptr ? " << (a.get() == nullptr) << "  (ÆÚÍû 1)\n";
-		std::cout << "ÒÆ¶¯ºó£ºb.use_count() = " << b.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "ÒÆ¶¯ºó£º*b.get() = " << *b.get() << "  (ÆÚÍû 42)\n";
+		SharedPtr<int> a(new int(42));
+		std::cout << "ç§»åŠ¨å‰ï¼ša.use_count() = " << a.use_count() << "  (æœŸæœ› 1)\n";
+		SharedPtr<int> b = std::move(a);                  // ç§»åŠ¨æ„é€ 
+		std::cout << "ç§»åŠ¨åï¼ša.use_count() = " << a.use_count() << "  (æœŸæœ› 0ï¼Œè¢«æç©º)\n";
+		std::cout << "ç§»åŠ¨åï¼ša.get() == nullptr ? " << (a.get() == nullptr) << "  (æœŸæœ› 1)\n";
+		std::cout << "ç§»åŠ¨åï¼šb.use_count() = " << b.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "ç§»åŠ¨åï¼š*b.get() = " << *b.get() << "  (æœŸæœ› 42)\n";
 	}
-	std::cout << "\n=== ²âÊÔ13£ºÒÆ¶¯¸³Öµ ===\n";
+	std::cout << "\n=== æµ‹è¯•13ï¼šç§»åŠ¨èµ‹å€¼ ===\n";
 	{
-		SharedPtr a(new int(42));
-		SharedPtr c(new int(7));
-		c = std::move(a);                            // ÒÆ¶¯¸³Öµ
-		std::cout << "a.use_count() = " << a.use_count() << "  (ÆÚÍû 0)\n";
-		std::cout << "a.get() == nullptr ? " << (a.get() == nullptr) << "  (ÆÚÍû 1)\n";
-		std::cout << "c.use_count() = " << c.use_count() << "  (ÆÚÍû 1)\n";
-		std::cout << "*c.get() = " << *c.get() << "  (ÆÚÍû 42)\n";
-		// ¹Ø¼ü£ºc Ô­À´¹ÜµÄ 7 ±ØĞë±»ÊÍ·Å£¨ÓÉ×îºóµÄ leaks detected ÑéÖ¤£©
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> c(new int(7));
+		c = std::move(a);                            // ç§»åŠ¨èµ‹å€¼
+		std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 0)\n";
+		std::cout << "a.get() == nullptr ? " << (a.get() == nullptr) << "  (æœŸæœ› 1)\n";
+		std::cout << "c.use_count() = " << c.use_count() << "  (æœŸæœ› 1)\n";
+		std::cout << "*c.get() = " << *c.get() << "  (æœŸæœ› 42)\n";
+		// å…³é”®ï¼šc åŸæ¥ç®¡çš„ 7 å¿…é¡»è¢«é‡Šæ”¾ï¼ˆç”±æœ€åçš„ leaks detected éªŒè¯ï¼‰
 	}
+	std::cout << "\n=== æµ‹è¯•14ï¼šè‡ªæˆ‘ resetï¼ˆå±é™©æ“ä½œï¼‰===\n";
+	{
+		SharedPtr<int> a(new int(42));
+		std::cout << "reset å‰ï¼šuse_count = " << a.use_count() << "\n";
+		a.reset(a.get());        // å±é™©ï¼
+		std::cout << "reset åï¼šuse_count = " << a.use_count() << " (æœŸæœ› 1)\n";
+		std::cout << "*a.get() = " << *a.get() << " (æœŸæœ› 42)\n";
+	}
+	*/
+
+	// ==================== v3: WeakPtr æµ‹è¯• ====================
+	/*
+std::cout << "\n=== æµ‹è¯•15ï¼šWeakPtr é»˜è®¤æ„é€ ï¼ˆç©ºï¼‰===\n";
+{
+	WeakPtr<int> w;
+	std::cout << "w.expired() = " << w.expired() << "  (æœŸæœ› 1ï¼Œç©ºå¼±å¼•ç”¨è§†ä¸ºå·²è¿‡æœŸ)\n";
+	std::cout << "lock() è¿”å›ç©º ? " << (w.lock() == nullptr) << "  (æœŸæœ› 1ï¼Œä¸å´©)\n";
+}
+
+std::cout << "\n=== æµ‹è¯•16ï¼šä» SharedPtr æ„é€  WeakPtr ===\n";
+{
+	SharedPtr<int> a(new int(42));
+	WeakPtr<int> w(a);
+	std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)  â˜…å¼±å¼•ç”¨ä¸å¢åŠ å¼ºè®¡æ•°\n";
+	std::cout << "w.expired() = " << w.expired() << "  (æœŸæœ› 0)\n";
+}
+	
+std::cout << "\n=== æµ‹è¯•17ï¼šå¯¹è±¡æ´»ç€æ—¶ lock() æˆåŠŸ ===\n";
+{
+	SharedPtr<int> a(new int(42));
+	WeakPtr<int> w(a);
+	{
+		SharedPtr<int> sp = w.lock();
+		std::cout << "lock æˆåŠŸ ? " << (sp != nullptr) << "  (æœŸæœ› 1)\n";
+		std::cout << "*sp = " << *sp << "  (æœŸæœ› 42)\n";
+		std::cout << "sp.use_count() = " << sp.use_count() << "  (æœŸæœ› 2)\n";
+		std::cout << "a.use_count()  = " << a.use_count() << "  (æœŸæœ› 2)\n";
+	}   // sp ææ„
+	std::cout << "sp ææ„å a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)\n";
+	std::cout << "sp ææ„å w.expired() = " << w.expired() << "  (æœŸæœ› 0)\n";
+}
+std::cout << "\n=== æµ‹è¯•18ï¼šå¯¹è±¡æ­»å lock() è¿”å›ç©º ===\n";
+{
+	SharedPtr<int> a(new int(42));
+	WeakPtr<int> w(a);
+	a.reset();                                   // å¯¹è±¡æ­»äº¡
+	std::cout << "w.expired() = " << w.expired() << "  (æœŸæœ› 1)\n";
+	SharedPtr<int> sp = w.lock();
+	std::cout << "lock è¿”å›ç©º ? " << (sp == nullptr) << "  (æœŸæœ› 1)\n";
+}
+
+std::cout << "\n=== æµ‹è¯•19ï¼šå¤šä¸ª WeakPtr å…±å­˜ ===\n";
+{
+	WeakPtr<int> w1;
+	WeakPtr<int> w2;
+	{
+		SharedPtr<int> a(new int(7));
+		WeakPtr<int> w3(a);
+		w1 = w3;                                 // æ‹·è´èµ‹å€¼
+		w2 = w3;                                 // æ‹·è´èµ‹å€¼
+		std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)  â˜…ä»æœ‰ 1\n";
+		std::cout << "w1.expired() = " << w1.expired() << "  (æœŸæœ› 0)\n";
+		std::cout << "w3.expired() = " << w3.expired() << "  (æœŸæœ› 0)\n";
+	}   // aã€w3 ææ„
+	std::cout << "a ææ„å w1.expired() = " << w1.expired() << "  (æœŸæœ› 1)\n";
+	std::cout << "a ææ„å w2.expired() = " << w2.expired() << "  (æœŸæœ› 1)\n";
+	std::cout << "a ææ„å w1.lock() ç©º ? " << (w1.lock() == nullptr) << "  (æœŸæœ› 1)\n";
+}   // w1ã€w2 ææ„ â†’ æ§åˆ¶å—æ­¤æ—¶æ‰è¯¥è¢«åˆ 
+
+std::cout << "\n=== æµ‹è¯•20ï¼šWeakPtr è‡ªæˆ‘èµ‹å€¼ ===\n";
+{
+	SharedPtr<int> a(new int(1));
+	WeakPtr<int> w(a);
+	w = w;                                       // è‡ªæˆ‘èµ‹å€¼
+	std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)\n";
+	std::cout << "w.expired() = " << w.expired() << "  (æœŸæœ› 0)\n";
+}
+
+std::cout << "\n=== æµ‹è¯•21ï¼šWeakPtr ç§»åŠ¨è¯­ä¹‰ ===\n";
+{
+	SharedPtr<int> a(new int(5));
+	WeakPtr<int> w1(a);
+	WeakPtr<int> w2 = std::move(w1);             // ç§»åŠ¨æ„é€ 
+	std::cout << "w1 è¢«æç©º ? " << (w1.expired()) << "  (æœŸæœ› 1ï¼Œæºå¯¹è±¡ç©ºäº†)\n";
+	std::cout << "w2.expired() = " << w2.expired() << "  (æœŸæœ› 0)\n";
+	std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)\n";
+
+	WeakPtr<int> w3;
+	w3 = std::move(w2);                          // ç§»åŠ¨èµ‹å€¼
+	std::cout << "w3.expired() = " << w3.expired() << "  (æœŸæœ› 0)\n";
+}
+
+std::cout << "\n=== æµ‹è¯•22ï¼šèµ‹å€¼ä¸€ä¸ªç©ºçš„ WeakPtr ===\n";
+{
+	SharedPtr<int> a(new int(9));
+	WeakPtr<int> w(a);
+	w = WeakPtr<int>();                          // èµ‹ç©º
+	std::cout << "w.expired() = " << w.expired() << "  (æœŸæœ› 1)\n";
+	std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1ï¼Œa ä¸å—å½±å“)\n";
+}
+*/
+
+// ==================== æœ€ç»ˆéªŒæ”¶ï¼šWeakPtr æ‰“ç ´ç¯å½¢å¼•ç”¨ ====================
+
+class CNode {
+public:
+	WeakPtr<CNode> next;      // â˜… ç¯çš„ä¸€æ¡è¾¹ç”¨ã€å¼±å¼•ç”¨ã€‘
+	int value;
+	CNode(int v) : value(v) {}
+};
+
+std::cout << "\n=== æµ‹è¯•23ï¼šWeakPtr æ‰“ç ´ç¯å½¢å¼•ç”¨ ===\n";
+{
+	SharedPtr<CNode> a(new CNode(1));
+	SharedPtr<CNode> b(new CNode(2));
+
+	a->next = b;                                  // aâ†’bï¼ˆå¼±ï¼‰
+	b->next = a;                                  // bâ†’aï¼ˆå¼±ï¼‰
+
+	std::cout << "a.use_count() = " << a.use_count() << "  (æœŸæœ› 1)  â˜…å¼ºè®¡æ•°æ²¡æœ‰å› æˆç¯è€Œå¢åŠ \n";
+	std::cout << "b.use_count() = " << b.use_count() << "  (æœŸæœ› 1)\n";
+	std::cout << "a->next.expired() = " << a->next.expired() << "  (æœŸæœ› 0ï¼Œb è¿˜æ´»ç€)\n";
+
+	SharedPtr<CNode> bx = a->next.lock();         // é€šè¿‡å¼±å¼•ç”¨æ‹¿åˆ° b
+	std::cout << "lock æ‹¿åˆ° b ? " << (bool)bx << "  (æœŸæœ› 1)\n";
+	std::cout << "b.use_count() = " << b.use_count() << "  (æœŸæœ› 2)\n";
+	std::cout << "bx->value = " << bx->value << "  (æœŸæœ› 2)\n";
+	std::cout << "bx è¿˜èƒ½æ²¿ç¯èµ°å› a å— ? value = " << bx->next.lock()->value
+		<< "  (æœŸæœ› 1ï¼Œç¯æ˜¯é€šçš„)\n";
+}   // aã€bï¼ˆä»¥åŠä¸´æ—¶å¯¹è±¡ï¼‰ææ„ â†’ ç¯ä¸å­˜åœ¨å¼ºå¼•ç”¨é—­åŒ… â†’ éƒ½è¯¥è¢«é‡Šæ”¾
+
+std::cout << "\nleaks detected: " << _CrtDumpMemoryLeaks() << "  (æœŸæœ› 0 â€”â€” è¿™å°±æ˜¯ v3 çš„æ„ä¹‰)\n";
+
+std::cout << "\nleaks detected: " << _CrtDumpMemoryLeaks() << "  (æœŸæœ› 0)\n";
 	std::cout << "\n";
-	std::cout << "leaks detected: " << _CrtDumpMemoryLeaks() << "  (ÆÚÍû 0)\n";
+	std::cout << "leaks detected: " << _CrtDumpMemoryLeaks() << "  (æœŸæœ› 0)\n";
 	return 0;
 }
+
+
+class Node {
+public:
+	SharedPtr<Node> next;
+	int value;
+	Node(int v) : value(v) {}
+};
+
+/*
+int main() {
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+
+	std::cout << "=== æ¨¡æ¿åŒ–éªŒè¯ï¼šSharedPtr<int> ä»å¯ç”¨ ===\n";
+	{
+		SharedPtr<int> a(new int(42));
+		SharedPtr<int> b = a;
+		std::cout << "a.use_count() = " << a.use_count() << " (æœŸæœ› 2)\n";
+		std::cout << "*a = " << *a << " (æœŸæœ› 42)\n";
+		std::cout << "a.get() != nullptr ? " << (a.get() != nullptr) << " (æœŸæœ› 1)\n";
+	}
+
+	std::cout << "\n=== operator-> é“¾å¼è®¿é—®éªŒè¯ ===\n";
+	{
+		SharedPtr<Node> a(new Node(1));
+		SharedPtr<Node> b(new Node(2));
+		a->next = b;
+
+		std::cout << "a->value = " << a->value << " (æœŸæœ› 1)\n";
+		std::cout << "a->next->value = " << a->next->value << " (æœŸæœ› 2)\n";       // ä¸¤å±‚ ->
+		std::cout << "(*a).next->value = " << (*a).next->value << " (æœŸæœ› 2)\n";   // * å’Œ -> ç­‰ä»·
+		std::cout << "(*a).value = " << (*a).value << " (æœŸæœ› 1)\n";
+		std::cout << "a.use_count() = " << a.use_count() << " (æœŸæœ› 1)\n";
+		std::cout << "b.use_count() = " << b.use_count() << " (æœŸæœ› 2ï¼Œa->next ä¹ŸæŒ‡ç€å®ƒ)\n";
+	}
+
+	std::cout << "\n=== v3 å‰ç½®å®éªŒï¼šç¯å½¢å¼•ç”¨ ===\n";
+	{
+		SharedPtr<Node> a(new Node(1));
+		SharedPtr<Node> b(new Node(2));
+		a->next = b;
+		b->next = a;
+		std::cout << "a.use_count() = " << a.use_count() << " (æœŸæœ› 2)\n";
+		std::cout << "b.use_count() = " << b.use_count() << " (æœŸæœ› 2)\n";
+		std::cout << "a->value = " << a->value << "\n";
+		std::cout << "b->value = " << b->value << "\n";
+	}
+
+	std::cout << "\nleaks detected: " << _CrtDumpMemoryLeaks() << " (æœŸæœ›ï¼šé 0ï¼)\n";
+}
+*/
