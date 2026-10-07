@@ -4,3 +4,18 @@ build/
 *.obj
 *.pdb
 *.ilk
+
+# 程序运行输出
+stage1/*.txt
+
+# 构建目录
+build/
+out/
+
+# 其他编译产物
+*.obj
+*.pdb
+*.ilk
+*.exp
+*.lib
+

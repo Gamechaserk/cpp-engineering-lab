@@ -1,6 +1,5 @@
 ﻿#pragma once
-template<typename T>
-struct ControlBlock;                    // 前向声明（如果还没有）
+#include<cstddef>
 
 template <typename T>
 struct ControlBlock {
@@ -71,7 +70,7 @@ public:
 
 	T& operator*() const { return *(m_cb->ptr); }
 
-	explicit operator bool() const { return m_cb->ptr != nullptr; }
+	explicit operator bool() const { return m_cb != nullptr && m_cb->ptr != nullptr; }
 
 	void reset(T* p = nullptr) {	
 		if (m_cb && m_cb->ptr == p) return;
