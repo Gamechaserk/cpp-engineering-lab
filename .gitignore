@@ -1,21 +1,24 @@
-build/
-.vs/
-*.exe
-*.obj
-*.pdb
-*.ilk
-
-# 程序运行输出
-stage1/*.txt
-
-# 构建目录
+# ── 构建目录 ──
 build/
 out/
+.vs/
 
-# 其他编译产物
+# ── 编译产物 ──
+*.exe
 *.obj
 *.pdb
 *.ilk
 *.exp
 *.lib
 
+# ── VS / CMake 本地产物 ──
+*.user
+*.suo
+CMakeUserPresets.json
+
+# ── 临时调试输出（用具体名字，不要用 *.txt！）──
+out.txt
+dbg.txt
+
+# ── 安全网：构建配置永远不许被忽略 ──
+!CMakeLists.txt
