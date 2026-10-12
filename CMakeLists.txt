@@ -65,11 +65,6 @@ function(smartptr_copy_asan_runtime target)
     endif()
 endfunction()
 
-# ── 6) 【B-1】主测试可执行文件（现有 58 条手写断言）──
-add_executable(ptr_tests tests/test_shared_ptr.cpp)
-target_link_libraries(ptr_tests PRIVATE smartptr_options smartptr_headers)
-smartptr_copy_asan_runtime(ptr_tests)
-
 # ── 7) 【B-2】拉取 GoogleTest ──
 include(FetchContent)
 FetchContent_Declare(
@@ -82,10 +77,12 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-# ── 8) 【B-2】独立冒烟目标：证明「CTest ←→ GoogleTest」接线通了 ──
-# 刻意「不改」现有 ptr_tests：一旦动了它的 main 执行流，
-# 那 58 条手写断言可能不再运行，而 ctest 却显示绿色 —— 静默失去证据。
-add_executable(ptr_smoke tests/test_smoke.cpp)
-target_link_libraries(ptr_smoke PRIVATE smartptr_options GTest::gtest_main)
-smartptr_copy_asan_runtime(ptr_smoke)
-gtest_discover_tests(ptr_smoke)
+# ── 6) 主测试可执行文件：23 个 gtest 用例 ──
+add_executable(ptr_tests tests/test_shared_ptr.cpp)
+target_link_libraries(ptr_tests PRIVATE
+    smartptr_options
+    smartptr_headers
+    GTest::gtest)      # 只用 gtest，不用 gtest_main：我们自己写 main（要配置 CRT 泄漏检查）
+
+smartptr_copy_asan_runtime(ptr_tests)   # ⚠️ 必须在 gtest_discover_tests 之前
+gtest_discover_tests(ptr_tests)
