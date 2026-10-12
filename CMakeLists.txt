@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 project(SmartPtr LANGUAGES CXX)
 
-# ── 1) 去掉 MSVC Debug 默认的 /RTC1（它与 ASan 不兼容）──
-# 必须在 project() 之后：CMAKE_CXX_FLAGS_DEBUG 由编译器模块在 project() 里初始化
+# ── 1) 去掉 MSVC Debug 默认的 /RTC1（与 ASan 不兼容）──
 if (MSVC)
     string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 endif()
 
-# ── 2) CRT 策略：Debug=/MDd，Release=/MT ──
-# 必须在任何"会编译的 target"创建之前（它在 target 创建时被读取来初始化属性）
+# ── 2) CRT 策略 ──
+# 【决策点 A】当前：Debug=/MDd，Release=/MT
+#   若选「统一 DLL CRT」→ 改成 "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 if (MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY
         "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreaded>")
@@ -20,44 +20,72 @@ enable_testing()
 add_library(smartptr_options INTERFACE)
 if (MSVC)
     target_compile_options(smartptr_options INTERFACE
-        /W4                                     # 最高警告等级
-        $<$<CONFIG:Debug>:/fsanitize=address>)  # 仅 Debug 开 ASan
+        /W4
+        $<$<CONFIG:Debug>:/fsanitize=address>)
+
+    # 【B-2 修复】ASan 容器注解会与「未开 ASan 的第三方静态库」冲突（LNK2038）
+    # 关掉注解 → 我们自己的 .obj 也发 "0"，与 gtest.lib 一致。
+    # ⚠️ 宏名以此处 STL 头文件里的真实开关为准（见取证命令）
+    target_compile_definitions(smartptr_options INTERFACE
+        _DISABLE_VECTOR_ANNOTATION
+        _DISABLE_STRING_ANNOTATION)
+
     target_link_options(smartptr_options INTERFACE
-        $<$<CONFIG:Debug>:/INCREMENTAL:NO>)     # ASan 要求关闭增量链接
+        $<$<CONFIG:Debug>:/INCREMENTAL:NO>)
 endif()
 
-# ── 4) 接口库：头文件包含路径 ──
+# ── 4) 接口库：头文件路径 ──
 add_library(smartptr_headers INTERFACE)
 target_include_directories(smartptr_headers INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-# ── 5) 测试可执行文件 ──
-add_executable(ptr_tests tests/test_shared_ptr.cpp)
-target_link_libraries(ptr_tests PRIVATE smartptr_options smartptr_headers)
-
-# ── 6) 【B-1 新增】族 B：把 ASan 运行时拷到 exe 旁边 ──
-# 目的：Debug 版 exe 脱离 VS 开发环境（任何终端）都能运行
-# ⚠️ 必须写在 gtest_discover_tests() 之前 —— 后者会生成 POST_BUILD 命令去运行 exe，
-#    而同一 target 的多个 POST_BUILD 命令按「定义顺序」执行
+# ── 5) 【族 B】找到 ASan 运行时（只做一次，全项目共用）──
 if (MSVC)
-    # 用 CMake 实际使用的编译器路径推导目录，不依赖 shell 的 PATH
+    # 用 CMake 实际使用的编译器路径推导，不依赖 shell 的 PATH
     get_filename_component(SMARTPTR_MSVC_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
-
     find_file(SMARTPTR_ASAN_DLL
         NAMES clang_rt.asan_dynamic-x86_64.dll
         PATHS "${SMARTPTR_MSVC_BIN_DIR}"
         NO_DEFAULT_PATH)
-
     message(STATUS "ASan runtime: ${SMARTPTR_ASAN_DLL}")
+endif()
 
-    if (SMARTPTR_ASAN_DLL)
-        add_custom_command(TARGET ptr_tests POST_BUILD
+# 给任意 target 挂上「把 ASan 运行时拷到 exe 旁边」
+# ⚠️ 必须在 gtest_discover_tests(<target>) 之前调用（POST_BUILD 按定义顺序执行）
+function(smartptr_copy_asan_runtime target)
+    if (MSVC AND SMARTPTR_ASAN_DLL)
+        add_custom_command(TARGET ${target} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${SMARTPTR_ASAN_DLL}"
-                    "$<TARGET_FILE_DIR:ptr_tests>"
+                    "$<TARGET_FILE_DIR:${target}>"
             VERBATIM)
-    else()
-        message(WARNING "未找到 ASan 运行时；Debug 版 exe 只能在 VS 开发环境里运行")
+    elseif (MSVC)
+        message(WARNING "未找到 ASan 运行时；${target} 的 Debug 版只能在 VS 开发环境里运行")
     endif()
-endif()
+endfunction()
+
+# ── 6) 【B-1】主测试可执行文件（现有 58 条手写断言）──
+add_executable(ptr_tests tests/test_shared_ptr.cpp)
+target_link_libraries(ptr_tests PRIVATE smartptr_options smartptr_headers)
+smartptr_copy_asan_runtime(ptr_tests)
+
+# ── 7) 【B-2】拉取 GoogleTest ──
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.15.2          # 固定版本；1.17+ 要求 C++17，本项目仍是 C++14
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)   # 见下文决策点 B
+FetchContent_MakeAvailable(googletest)
+
+include(GoogleTest)
+
+# ── 8) 【B-2】独立冒烟目标：证明「CTest ←→ GoogleTest」接线通了 ──
+# 刻意「不改」现有 ptr_tests：一旦动了它的 main 执行流，
+# 那 58 条手写断言可能不再运行，而 ctest 却显示绿色 —— 静默失去证据。
+add_executable(ptr_smoke tests/test_smoke.cpp)
+target_link_libraries(ptr_smoke PRIVATE smartptr_options GTest::gtest_main)
+smartptr_copy_asan_runtime(ptr_smoke)
+gtest_discover_tests(ptr_smoke)
