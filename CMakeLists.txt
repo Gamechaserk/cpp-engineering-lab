@@ -7,8 +7,8 @@ if (MSVC)
 endif()
 
 # ── 2) CRT 策略 ──
-# 【决策点 A】当前：Debug=/MDd，Release=/MT
-#   若选「统一 DLL CRT」→ 改成 "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+# 当前：Debug=/MDd，Release=/MT
+#  若选「统一 DLL CRT」→ 改成 "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 if (MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY
         "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreaded>")
@@ -23,9 +23,9 @@ if (MSVC)
         /W4
         $<$<CONFIG:Debug>:/fsanitize=address>)
 
-    # 【B-2 修复】ASan 容器注解会与「未开 ASan 的第三方静态库」冲突（LNK2038）
+    # ASan 容器注解会与「未开 ASan 的第三方静态库」冲突（LNK2038）
     # 关掉注解 → 我们自己的 .obj 也发 "0"，与 gtest.lib 一致。
-    # ⚠️ 宏名以此处 STL 头文件里的真实开关为准（见取证命令）
+    # 宏名以此处 STL 头文件里的真实开关为准（见取证命令）
     target_compile_definitions(smartptr_options INTERFACE
         _DISABLE_VECTOR_ANNOTATION
         _DISABLE_STRING_ANNOTATION)
@@ -52,7 +52,7 @@ if (MSVC)
 endif()
 
 # 给任意 target 挂上「把 ASan 运行时拷到 exe 旁边」
-# ⚠️ 必须在 gtest_discover_tests(<target>) 之前调用（POST_BUILD 按定义顺序执行）
+# 必须在 gtest_discover_tests(<target>) 之前调用（POST_BUILD 按定义顺序执行）
 function(smartptr_copy_asan_runtime target)
     if (MSVC AND SMARTPTR_ASAN_DLL)
         add_custom_command(TARGET ${target} POST_BUILD
@@ -65,7 +65,7 @@ function(smartptr_copy_asan_runtime target)
     endif()
 endfunction()
 
-# ── 7) 【B-2】拉取 GoogleTest ──
+# 拉取 GoogleTest ──
 include(FetchContent)
 FetchContent_Declare(
     googletest
@@ -84,5 +84,11 @@ target_link_libraries(ptr_tests PRIVATE
     smartptr_headers
     GTest::gtest)      # 只用 gtest，不用 gtest_main：我们自己写 main（要配置 CRT 泄漏检查）
 
-smartptr_copy_asan_runtime(ptr_tests)   # ⚠️ 必须在 gtest_discover_tests 之前
+smartptr_copy_asan_runtime(ptr_tests)   #  必须在 gtest_discover_tests 之前
 gtest_discover_tests(ptr_tests)
+
+# 新test
+add_executable(vector_tests tests/test_my_vector.cpp)
+target_link_libraries(vector_tests PRIVATE smartptr_options smartptr_headers GTest::gtest)
+smartptr_copy_asan_runtime(vector_tests)
+gtest_discover_tests(vector_tests)
