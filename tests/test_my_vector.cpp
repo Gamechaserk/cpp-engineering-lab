@@ -79,7 +79,6 @@ TEST(MyVector, PushBackKeepsOldElements) {
         EXPECT_EQ(v[i], i) << "9 ´Î push_back() ºó v[i]==i";
     }
 }
-
 //²âÊÔ6£º¿ÕÈÝÆ÷ reserve()
 TEST(MyVector, ReserveGrows) {
     MyVector<int> v;
@@ -177,7 +176,6 @@ TEST(MyVector, IterateWithRangeFor) {
     for (auto num : v) sum += num;
     EXPECT_EQ(sum, 10) << "·¶Î§ for ÇóºÍµÈÓÚ10";
 }
-
 // ---------- 17 À©ÈÝ = »»»º³åÇø ----------
 TEST(MyVector, DataPointerChangesAfterGrow) {
     MyVector<int> v;
