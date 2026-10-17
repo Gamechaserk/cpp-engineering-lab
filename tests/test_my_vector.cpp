@@ -91,6 +91,7 @@ TEST(MyVector, ReserveNoOpWhenEqual) {
     MyVector<int> v;
     v.reserve(20);
     int* before = v.data();
+    ASSERT_NE(before, nullptr) << "前提：...";
     EXPECT_EQ(v.capacity(), 20) << "1 次 reserve(20) 后 capacity()==20";
     v.reserve(20);
     EXPECT_EQ(v.capacity(), 20) << "1 次 reserve(20) 后 capacity()==20";
@@ -98,7 +99,6 @@ TEST(MyVector, ReserveNoOpWhenEqual) {
 }
 //测试8：装5个后 reserve(4) capacity 不变
 TEST(MyVector, ReserveNeverShrinks) {
-    //MyVector<int> v(5,1);
     MyVector<int> v;
     v.reserve(5);
     for (int i = 0; i < 5; i++) v.push_back(i);
@@ -111,7 +111,7 @@ TEST(MyVector, ReserveNeverShrinks) {
     }
 }
 //测试9：空容器 reserve(10)逻辑不构造
-TEST(MyVector, ReserveDoesNotConstructElements) {
+TEST(MyVector, ReserveDoesNotChangeSize) {
     MyVector<int> v;
     v.reserve(10);
     EXPECT_EQ(v.size(), 0) << "1 次 reserve(10) 后 size()==0";
@@ -185,7 +185,6 @@ TEST(MyVector, DataPointerChangesAfterGrow) {
     v.push_back(2);                       // cap 1 -> 2，触发 reallocate
     EXPECT_EQ(v.capacity(), 2);
     EXPECT_NE(v.data(), before) << "扩容后必须是新缓冲区";
-    // 为什么 EXPECT_NE 可靠：reallocate 先 new 后 delete[]，旧块在分配时还活着
     EXPECT_EQ(v[0], 1) << "旧数据必须搬过来";
     EXPECT_EQ(v[1], 2);
 }
