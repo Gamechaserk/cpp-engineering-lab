@@ -97,3 +97,34 @@ target_link_libraries(vector_tests PRIVATE
 
 smartptr_copy_asan_runtime(vector_tests)   # 必须在 gtest_discover_tests 之前
 gtest_discover_tests(vector_tests)
+
+
+# ── 9) U04：渲染器核心（静态库：给 exe 和测试共用）──
+add_library(renderer_core STATIC
+    renderer/src/render/Framebuffer.cpp
+    renderer/src/io/PpmWriter.cpp)
+
+# PUBLIC：库自己要用，链接它的目标【也继承】→ 编译选项/宏不会分叉
+target_link_libraries(renderer_core PUBLIC
+    lab_options
+    lab_headers)
+
+# PUBLIC：这是"本库的公开头目录"，谁链它谁自动拿到
+target_include_directories(renderer_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer/include)
+
+# ── 10) U04：渲染器可执行文件（画渐变 → 写 PPM）──
+add_executable(renderer renderer/src/main.cpp)
+target_link_libraries(renderer PRIVATE renderer_core)
+
+# ★ 可执行文件必须挂：把 ASan 运行时拷到 exe 旁边（否则 Debug 版直接 0xC0000135）
+smartptr_copy_asan_runtime(renderer)
+
+# ── 11) U04：渲染器测试（Math / Ppm）──
+add_executable(renderer_tests tests/test_renderer.cpp)
+target_link_libraries(renderer_tests PRIVATE
+    renderer_core        # ★ 会自动继承 lab_options / lab_headers / renderer/include
+    GTest::gtest)        # 同样自己写 main（沿用 tests/test_my_vector.cpp 末尾那份）
+
+smartptr_copy_asan_runtime(renderer_tests)   # 必须在 gtest_discover_tests 之前
+gtest_discover_tests(renderer_tests)

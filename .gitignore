@@ -3,6 +3,9 @@ build/
 out/
 .vs/
 
+# 渲染器产物（图片是生成物；要展示的图另存到 docs/images/）
+output/
+
 # ---- compiler artifacts ----
 *.exe
 *.obj
