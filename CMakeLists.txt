@@ -128,3 +128,22 @@ target_link_libraries(renderer_tests PRIVATE
 
 smartptr_copy_asan_runtime(renderer_tests)   # 必须在 gtest_discover_tests 之前
 gtest_discover_tests(renderer_tests)
+
+
+# ── 12) 并发练习：线程 / 锁 / 原子（学习用一次性 target）──
+find_package(Threads REQUIRED)
+
+add_executable(thread_demo tools/thread_demo.cpp)
+target_link_libraries(thread_demo PRIVATE
+    lab_options          # 继承 /W4 + Debug 下的 ASan
+    Threads::Threads)    # Windows 上展开为空；Linux 上展开为 -pthread
+
+smartptr_copy_asan_runtime(thread_demo)   # 它也开 ASan，所以照样要把运行时拷到 exe 旁边
+
+# ── 13) 手撕专项：LRU 缓存（自测用 main；不进 CTest，保持 59/59 基线）──
+add_executable(lru_cache handwritten/lru_cache.cpp)
+target_link_libraries(lru_cache PRIVATE
+    lab_options
+    Threads::Threads)    # std::mutex 在 Linux 上要 pthread；Windows 上展开为空
+
+smartptr_copy_asan_runtime(lru_cache)
