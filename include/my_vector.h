@@ -1,12 +1,12 @@
-#pragma once
+ï»¿#pragma once
 #include<cstddef>
 #include <utility>
 
 template <typename T>
 class MyVector {
 public:
-	MyVector() = default; //¿Õ¹¹Ôì
-	explicit MyVector(std::size_t len,const T& value) { //ÓÐÖµ¹¹Ôì
+	MyVector() = default; //ç©ºæž„é€ 
+	explicit MyVector(std::size_t len,const T& value) { //æœ‰å€¼æž„é€ 
 		m_data = new T[len];
 		for (std::size_t i = 0; i < len; i++) {
 			m_data[i] = value;
@@ -14,7 +14,7 @@ public:
 		m_size = len;
 		m_capacity = len;
 	}
-	MyVector(const MyVector& other) { //¿½±´¹¹Ôì
+	MyVector(const MyVector& other) { //æ‹·è´æž„é€ 
 		if (other.m_capacity != 0) {
 			m_data = new T[other.m_capacity];
 			for (std::size_t i = 0; i < other.m_size; i++) {
@@ -24,7 +24,7 @@ public:
 			m_size = other.m_size;
 		}
 	}
-	MyVector& operator=(const MyVector& other) { //¿½±´¸³Öµ
+	MyVector& operator=(const MyVector& other) { //æ‹·è´èµ‹å€¼
 		if (this == &other) return *this;
 		release();
 		if (other.m_capacity != 0) {
@@ -37,7 +37,7 @@ public:
 		}
 		return *this;
 	}
-	MyVector(MyVector&& other) noexcept { //ÒÆ¶¯¹¹Ôì
+	MyVector(MyVector&& other) noexcept { //ç§»åŠ¨æž„é€ 
 		if (other.m_capacity != 0) {
 			m_data = other.m_data;
 			m_capacity = other.m_capacity;
@@ -47,7 +47,7 @@ public:
 		other.m_capacity = 0;
 		other.m_size = 0;
 	}
-	MyVector& operator=(MyVector&& other) noexcept { //ÒÆ¶¯¸³Öµ
+	MyVector& operator=(MyVector&& other) noexcept { //ç§»åŠ¨èµ‹å€¼
 		if (this == &other) return *this;
 		release();
 		if (other.m_capacity != 0) {

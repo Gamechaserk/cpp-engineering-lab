@@ -1,9 +1,9 @@
-#define _CRTDBG_MAP_ALLOC
+ï»¿#define _CRTDBG_MAP_ALLOC
 #include <cstdlib>
 #include <crtdbg.h>
 #include "my_vector.h"
 #include <gtest/gtest.h>
-#include <type_traits>   // is_same£¨±àÒëÆÚ¶ÏÑÔ£©
+#include <type_traits>   // is_sameï¼ˆç¼–è¯‘æœŸæ–­è¨€ï¼‰
 #include <utility>       // std::move
 #include <string>        // NonTrivialElementType
 
@@ -27,77 +27,77 @@ struct MoveTracked {
 int MoveTracked::copies = 0;
 int MoveTracked::moves = 0;
 
-// ÔÚÍ·ÎÄ¼şÀï£¨ÀàÍâ£©»ò²âÊÔÎÄ¼şÀï
+// åœ¨å¤´æ–‡ä»¶é‡Œï¼ˆç±»å¤–ï¼‰æˆ–æµ‹è¯•æ–‡ä»¶é‡Œ
 int Tracked::alive = 0;
 int Tracked::destroyed = 0;
 
-// ²âÊÔ1£º¿ÕÈİÆ÷
+// æµ‹è¯•1ï¼šç©ºå®¹å™¨
 TEST(MyVector, Empty) {
     MyVector<int> v;
-    EXPECT_EQ(v.size(), 0) << "¿ÕÈİÆ÷ size()==0";
-    EXPECT_EQ(v.capacity(), 0) << "¿ÕÈİÆ÷ capacity()==0";
-    EXPECT_EQ(v.data(),nullptr) << "¿ÕÈİÆ÷ Ö¸ÕëÎª¿Õ";
-    EXPECT_TRUE(v.empty()) << "¿ÕÈİÆ÷Îª¿Õ";
+    EXPECT_EQ(v.size(), 0) << "ç©ºå®¹å™¨ size()==0";
+    EXPECT_EQ(v.capacity(), 0) << "ç©ºå®¹å™¨ capacity()==0";
+    EXPECT_EQ(v.data(),nullptr) << "ç©ºå®¹å™¨ æŒ‡é’ˆä¸ºç©º";
+    EXPECT_TRUE(v.empty()) << "ç©ºå®¹å™¨ä¸ºç©º";
 }
-//²âÊÔ2£ºµ¥ÔªËØpush_back()
+//æµ‹è¯•2ï¼šå•å…ƒç´ push_back()
 TEST(MyVector, PushBackToEmpty) {
     MyVector<int> v;
     v.push_back(7);
-    EXPECT_EQ(v.size(), 1) << "1 ´Î push_back(7) ºó size()==1";
-    EXPECT_EQ(v.capacity(), 1) << "1 ´Î push_back(7) ºó capacity()==1";
-    EXPECT_EQ(v[0], 7) << "1 ´Î push_back(7) ºó v[0]==7";
+    EXPECT_EQ(v.size(), 1) << "1 æ¬¡ push_back(7) å size()==1";
+    EXPECT_EQ(v.capacity(), 1) << "1 æ¬¡ push_back(7) å capacity()==1";
+    EXPECT_EQ(v[0], 7) << "1 æ¬¡ push_back(7) å v[0]==7";
 }
-//²âÊÔ3£ºpush 100 ¸ö²»Í¬Öµ
+//æµ‹è¯•3ï¼špush 100 ä¸ªä¸åŒå€¼
 TEST(MyVector, PushBackCheckingValues) {
     MyVector<int> v;
     for (int i = 0; i < 100; i++) v.push_back(i);
-    EXPECT_EQ(v.size(), 100) << "100 ´Î push_back() ºó size()==100";
+    EXPECT_EQ(v.size(), 100) << "100 æ¬¡ push_back() å size()==100";
     for (int i = 0; i < 100; i++) {
-        EXPECT_EQ(v[i], i) << "100 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "100 æ¬¡ push_back() å v[i]==i";
     }
 }
-//²âÊÔ4£ºpush 100 ¸ö²»Í¬Öµ¼ì²âcapacity
+//æµ‹è¯•4ï¼špush 100 ä¸ªä¸åŒå€¼æ£€æµ‹capacity
 TEST(MyVector, PushBackGrowthIsObservable) {
     MyVector<int> v;
     int n = 1;
     for (int i = 0; i < 100; i++) {
         v.push_back(i);
         if (n <= i) n *= 2;
-        EXPECT_EQ(v.capacity(), n) << "i ´Î push_back() ºó capacity()==n";
+        EXPECT_EQ(v.capacity(), n) << "i æ¬¡ push_back() å capacity()==n";
     }
 }
-//²âÊÔ5£ºÀ©Èİ´¥·¢
+//æµ‹è¯•5ï¼šæ‰©å®¹è§¦å‘
 TEST(MyVector, PushBackKeepsOldElements) {
     MyVector<int> v;
     for (int i = 0; i < 8; i++) v.push_back(i);
     for (int i = 0; i < 8; i++) {
-        EXPECT_EQ(v[i], i) << "8 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "8 æ¬¡ push_back() å v[i]==i";
     }
     v.push_back(8);
-    EXPECT_EQ(v.capacity(), 16) << "´¥·¢À©Èİ";
+    EXPECT_EQ(v.capacity(), 16) << "è§¦å‘æ‰©å®¹";
     for (int i = 0; i < 9; i++) {
-        EXPECT_EQ(v[i], i) << "9 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "9 æ¬¡ push_back() å v[i]==i";
     }
 }
-//²âÊÔ6£º¿ÕÈİÆ÷ reserve()
+//æµ‹è¯•6ï¼šç©ºå®¹å™¨ reserve()
 TEST(MyVector, ReserveGrows) {
     MyVector<int> v;
     v.reserve(10);
-    EXPECT_EQ(v.capacity(), 10) << "1 ´Î reserve(10) ºó capacity()==10";
-    EXPECT_NE(v.data(), nullptr) << "ÕæµÄ·ÖÅäÁË";
+    EXPECT_EQ(v.capacity(), 10) << "1 æ¬¡ reserve(10) å capacity()==10";
+    EXPECT_NE(v.data(), nullptr) << "çœŸçš„åˆ†é…äº†";
 }
-//²âÊÔ7£ºÖØ¸´reserve() capacity ²»±ä
+//æµ‹è¯•7ï¼šé‡å¤reserve() capacity ä¸å˜
 TEST(MyVector, ReserveNoOpWhenEqual) {
     MyVector<int> v;
     v.reserve(20);
     int* before = v.data();
-    ASSERT_NE(before, nullptr) << "Ç°Ìá£º...";
-    EXPECT_EQ(v.capacity(), 20) << "1 ´Î reserve(20) ºó capacity()==20";
+    ASSERT_NE(before, nullptr) << "å‰æï¼š...";
+    EXPECT_EQ(v.capacity(), 20) << "1 æ¬¡ reserve(20) å capacity()==20";
     v.reserve(20);
-    EXPECT_EQ(v.capacity(), 20) << "1 ´Î reserve(20) ºó capacity()==20";
-    EXPECT_EQ(before, v.data()) << "µØÖ·²»±ä";
+    EXPECT_EQ(v.capacity(), 20) << "1 æ¬¡ reserve(20) å capacity()==20";
+    EXPECT_EQ(before, v.data()) << "åœ°å€ä¸å˜";
 }
-//²âÊÔ8£º×°5¸öºó reserve(4) capacity ²»±ä
+//æµ‹è¯•8ï¼šè£…5ä¸ªå reserve(4) capacity ä¸å˜
 TEST(MyVector, ReserveNeverShrinks) {
     MyVector<int> v;
     v.reserve(5);
@@ -105,40 +105,40 @@ TEST(MyVector, ReserveNeverShrinks) {
     EXPECT_EQ(v.size(), 5) << "size()==5";
     EXPECT_EQ(v.capacity(), 5) << "capacity()==5";
     v.reserve(4);
-    EXPECT_EQ(v.capacity(), 5) << "reserve(size-1)ºó capacity()==5";
+    EXPECT_EQ(v.capacity(), 5) << "reserve(size-1)å capacity()==5";
     for (int i = 0; i < 5; i++) {
-        EXPECT_EQ(v[i], i) << "5 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "5 æ¬¡ push_back() å v[i]==i";
     }
 }
-//²âÊÔ9£º¿ÕÈİÆ÷ reserve(10)Âß¼­²»¹¹Ôì
+//æµ‹è¯•9ï¼šç©ºå®¹å™¨ reserve(10)é€»è¾‘ä¸æ„é€ 
 TEST(MyVector, ReserveDoesNotChangeSize) {
     MyVector<int> v;
     v.reserve(10);
-    EXPECT_EQ(v.size(), 0) << "1 ´Î reserve(10) ºó size()==0";
-    EXPECT_TRUE(v.empty()) << "1 ´Î reserve(10) ºó ÈİÆ÷Îª¿Õ";
+    EXPECT_EQ(v.size(), 0) << "1 æ¬¡ reserve(10) å size()==0";
+    EXPECT_TRUE(v.empty()) << "1 æ¬¡ reserve(10) å å®¹å™¨ä¸ºç©º";
 }
-//²âÊÔ10£º¿ÕÈİÆ÷ reserve(10)
+//æµ‹è¯•10ï¼šç©ºå®¹å™¨ reserve(10)
 TEST(MyVector, ReserveThenPushBack) {
     MyVector<int> v;
     v.reserve(10);
     for (int i = 0; i < 10; i++) v.push_back(i);
     for (int i = 0; i < 10; i++) {
-        EXPECT_EQ(v[i], i) << "10 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "10 æ¬¡ push_back() å v[i]==i";
     }
-    EXPECT_EQ(v.size(), 10) << "10 ´Î push_back() ºó size()==10";
-    EXPECT_EQ(v.capacity(), 10) << "10 ´Î push Ã»´¥·¢À©Èİ";
+    EXPECT_EQ(v.size(), 10) << "10 æ¬¡ push_back() å size()==10";
+    EXPECT_EQ(v.capacity(), 10) << "10 æ¬¡ push æ²¡è§¦å‘æ‰©å®¹";
 }
-//²âÊÔ11£ºÓĞ3¸öÔªËØÊ± reserve(50) ¡ú 3 ¸öÖµ²»±ä¡¢ size() ²»±ä
+//æµ‹è¯•11ï¼šæœ‰3ä¸ªå…ƒç´ æ—¶ reserve(50) â†’ 3 ä¸ªå€¼ä¸å˜ã€ size() ä¸å˜
 TEST(MyVector, ReserveKeepsExistingData) {
     MyVector<int> v;
     for (int i = 0; i < 3; i++) v.push_back(i);
     v.reserve(50);
-    EXPECT_EQ(v.size(), 3) << "1 ´Î reserve(50) ºó size()==3";
+    EXPECT_EQ(v.size(), 3) << "1 æ¬¡ reserve(50) å size()==3";
     for (int i = 0; i < 3; i++) {
-        EXPECT_EQ(v[i], i) << "3 ´Î push_back() ºó v[i]==i";
+        EXPECT_EQ(v[i], i) << "3 æ¬¡ push_back() å v[i]==i";
     }
 }
-//²âÊÔ12£ºÒÀÀµ begin() »ñÈ¡Ê×µØÖ·ÔªËØ
+//æµ‹è¯•12ï¼šä¾èµ– begin() è·å–é¦–åœ°å€å…ƒç´ 
 TEST(MyVector, SubscriptReadWrite) {
     MyVector<int> v;
     v.push_back(9);
@@ -146,112 +146,112 @@ TEST(MyVector, SubscriptReadWrite) {
     v[0] = 42; 
     EXPECT_EQ(v[0], 42);
 }
-// ---------- 13 ±àÒëÆÚÆõÔ¼£ºconst ¶ÔÏóÉÏÄÜÓÃ operator[] ----------
-TEST(MyVector, SubscriptOnConstObject) {            // ¹Ø¼ü
+// ---------- 13 ç¼–è¯‘æœŸå¥‘çº¦ï¼šconst å¯¹è±¡ä¸Šèƒ½ç”¨ operator[] ----------
+TEST(MyVector, SubscriptOnConstObject) {            // å…³é”®
     MyVector<int> v;
     v.push_back(9);
-    const MyVector<int>& cv = v;          // ÓÃ const ÒıÓÃ°Ñ"Ğ´È¨ÏŞ"¹Øµô
-    EXPECT_EQ(cv[0], 9) << "const ¶ÔÏóÉÏÄÜ¶Á";
+    const MyVector<int>& cv = v;          // ç”¨ const å¼•ç”¨æŠŠ"å†™æƒé™"å…³æ‰
+    EXPECT_EQ(cv[0], 9) << "const å¯¹è±¡ä¸Šèƒ½è¯»";
     EXPECT_EQ(cv.size(), 1);
-    // ±àÒëÆÚ¶ÏÑÔ£º·µ»ØÀàĞÍ±ØĞëÊÇ const T&
+    // ç¼–è¯‘æœŸæ–­è¨€ï¼šè¿”å›ç±»å‹å¿…é¡»æ˜¯ const T&
     static_assert(std::is_same<decltype(cv[0]), const int&>::value,
-        "const °æ operator[] Ó¦·µ»Ø const T&");
+        "const ç‰ˆ operator[] åº”è¿”å› const T&");
 }
-//²âÊÔ14£º¿ÕÈİÆ÷begin()==end()
+//æµ‹è¯•14ï¼šç©ºå®¹å™¨begin()==end()
 TEST(MyVector, BeginEndOnEmptyAreEqual) {
     MyVector<int> v;
-    EXPECT_EQ(v.begin(), v.end()) << "¿ÕÈİÆ÷begin()==end()";
+    EXPECT_EQ(v.begin(), v.end()) << "ç©ºå®¹å™¨begin()==end()";
 }
-//²âÊÔ15£ºend() - begin() == size()
+//æµ‹è¯•15ï¼šend() - begin() == size()
 TEST(MyVector, BeginEndDistanceEqualsSize) {
     MyVector<int> v;
     for (int i = 0; i < 5; i++) v.push_back(i);
     EXPECT_EQ(v.end() - v.begin(), v.size()) << "end() - begin() == size()";
 }
-//²âÊÔ16£º·¶Î§ for ÇóºÍ
+//æµ‹è¯•16ï¼šèŒƒå›´ for æ±‚å’Œ
 TEST(MyVector, IterateWithRangeFor) {
     MyVector<int> v;
     for (int i = 0; i < 5; i++) v.push_back(i);
     int sum = 0;
     for (auto num : v) sum += num;
-    EXPECT_EQ(sum, 10) << "·¶Î§ for ÇóºÍµÈÓÚ10";
+    EXPECT_EQ(sum, 10) << "èŒƒå›´ for æ±‚å’Œç­‰äº10";
 }
-// ---------- 17 À©Èİ = »»»º³åÇø ----------
+// ---------- 17 æ‰©å®¹ = æ¢ç¼“å†²åŒº ----------
 TEST(MyVector, DataPointerChangesAfterGrow) {
     MyVector<int> v;
     v.push_back(1);                       // cap 0 -> 1
     int* before = v.data();
     EXPECT_EQ(v.capacity(), 1);
-    v.push_back(2);                       // cap 1 -> 2£¬´¥·¢ reallocate
+    v.push_back(2);                       // cap 1 -> 2ï¼Œè§¦å‘ reallocate
     EXPECT_EQ(v.capacity(), 2);
-    EXPECT_NE(v.data(), before) << "À©Èİºó±ØĞëÊÇĞÂ»º³åÇø";
-    EXPECT_EQ(v[0], 1) << "¾ÉÊı¾İ±ØĞë°á¹ıÀ´";
+    EXPECT_NE(v.data(), before) << "æ‰©å®¹åå¿…é¡»æ˜¯æ–°ç¼“å†²åŒº";
+    EXPECT_EQ(v[0], 1) << "æ—§æ•°æ®å¿…é¡»æ¬è¿‡æ¥";
     EXPECT_EQ(v[1], 2);
 }
-// ---------- 19 ¿½±´¹¹ÔìÊÇÉî¿½±´ ----------
-TEST(MyVector, CopyConstructorIsDeep) {              // ¹Ø¼ü
-    ASSERT_EQ(Tracked::alive, 0) << "Ç°Ìá£º½øÈëÊ±¼ÆÊı¸É¾»";
+// ---------- 19 æ‹·è´æ„é€ æ˜¯æ·±æ‹·è´ ----------
+TEST(MyVector, CopyConstructorIsDeep) {              // å…³é”®
+    ASSERT_EQ(Tracked::alive, 0) << "å‰æï¼šè¿›å…¥æ—¶è®¡æ•°å¹²å‡€";
     {
         MyVector<Tracked> a;
         a.push_back(Tracked{});           // a: cap 1 -> alive 1
-        MyVector<Tracked> b(a);           // Éî¿½±´£ºÔÙ new T[1]
-        EXPECT_EQ(Tracked::alive, 2) << "Éî¿½±´ºó alive Ó¦·­±¶";
+        MyVector<Tracked> b(a);           // æ·±æ‹·è´ï¼šå† new T[1]
+        EXPECT_EQ(Tracked::alive, 2) << "æ·±æ‹·è´å alive åº”ç¿»å€";
         EXPECT_EQ(b.size(), 1);
         EXPECT_EQ(b.capacity(), 1);
-        EXPECT_NE(a.data(), b.data()) << " ²»¹²Ïí»º³åÇø£¨Ç³¿½±´Ê±ÕâÀï»áÏàµÈ£©";
+        EXPECT_NE(a.data(), b.data()) << " ä¸å…±äº«ç¼“å†²åŒºï¼ˆæµ…æ‹·è´æ—¶è¿™é‡Œä¼šç›¸ç­‰ï¼‰";
     }
-    EXPECT_EQ(Tracked::alive, 0) << "×÷ÓÃÓò½áÊø±ØĞëÈ«²¿Îö¹¹";
+    EXPECT_EQ(Tracked::alive, 0) << "ä½œç”¨åŸŸç»“æŸå¿…é¡»å…¨éƒ¨ææ„";
 }
-// ---------- 20 ¿½±´¸³Öµ±ØĞë´øÉÏ size / capacity ----------
+// ---------- 20 æ‹·è´èµ‹å€¼å¿…é¡»å¸¦ä¸Š size / capacity ----------
 TEST(MyVector, CopyAssignmentCopiesCapacityAndSize) {
     MyVector<Tracked> a;
     a.push_back(Tracked{});
     {
         MyVector<Tracked> c;
         c = a;
-        EXPECT_EQ(c.size(), 1) << " ¿½±´¸³Öµºó size ±ØĞëÕıÈ·";
-        EXPECT_EQ(c.capacity(), 1) << " ¿½±´¸³Öµºó capacity ±ØĞëÕıÈ·";
+        EXPECT_EQ(c.size(), 1) << " æ‹·è´èµ‹å€¼å size å¿…é¡»æ­£ç¡®";
+        EXPECT_EQ(c.capacity(), 1) << " æ‹·è´èµ‹å€¼å capacity å¿…é¡»æ­£ç¡®";
         EXPECT_EQ(Tracked::alive, 2);
-        EXPECT_NE(c.data(), a.data()) << "Éî¿½±´";
+        EXPECT_NE(c.data(), a.data()) << "æ·±æ‹·è´";
     }
-    EXPECT_EQ(Tracked::alive, 1) << "c Îö¹¹ºóÖ»Ê£ a";
-    EXPECT_EQ(a.size(), 1) << "a ²»ÊÜÓ°Ïì";
+    EXPECT_EQ(Tracked::alive, 1) << "c ææ„ååªå‰© a";
+    EXPECT_EQ(a.size(), 1) << "a ä¸å—å½±å“";
 }
-// ---------- 21 ×ÔÎÒ¸³Öµ°²È« ----------
+// ---------- 21 è‡ªæˆ‘èµ‹å€¼å®‰å…¨ ----------
 TEST(MyVector, SelfAssignmentIsSafe) {
     MyVector<Tracked> v;
     v.push_back(Tracked{});               // alive 1
-    MyVector<Tracked>& r = v;             // ÓÃÒıÓÃÈÆ¿ª±àÒëÆ÷µÄ×Ô¸³Öµ¾¯¸æ
+    MyVector<Tracked>& r = v;             // ç”¨å¼•ç”¨ç»•å¼€ç¼–è¯‘å™¨çš„è‡ªèµ‹å€¼è­¦å‘Š
     r = v;
     EXPECT_EQ(v.size(), 1);
-    EXPECT_EQ(Tracked::alive, 1) << " ²»ÄÜĞ¹Â©¡¢²»ÄÜ¶à¹¹Ôì";
+    EXPECT_EQ(Tracked::alive, 1) << " ä¸èƒ½æ³„æ¼ã€ä¸èƒ½å¤šæ„é€ ";
 }
-// ---------- 22 ¿½±´¸³ÖµÒªÊÍ·ÅÄ¿±êÔ­ÓĞ»º³åÇø ----------
+// ---------- 22 æ‹·è´èµ‹å€¼è¦é‡Šæ”¾ç›®æ ‡åŸæœ‰ç¼“å†²åŒº ----------
 TEST(MyVector, CopyAssignmentReleasesOldBuffer) {
     MyVector<Tracked> a;
     a.push_back(Tracked{});
     MyVector<Tracked> c;
     c.push_back(Tracked{});               // a + c -> alive 2
     EXPECT_EQ(Tracked::alive, 2);
-    c = a;                                // c µÄ¾É»º³åÇø±ØĞë±»ÊÍ·Å
-    EXPECT_EQ(Tracked::alive, 2) << " ÊÍ·Å¾ÉµÄ 1 ¸ö + ĞÂ½¨ 1 ¸ö = ÈÔÊÇ 2";
+    c = a;                                // c çš„æ—§ç¼“å†²åŒºå¿…é¡»è¢«é‡Šæ”¾
+    EXPECT_EQ(Tracked::alive, 2) << " é‡Šæ”¾æ—§çš„ 1 ä¸ª + æ–°å»º 1 ä¸ª = ä»æ˜¯ 2";
     EXPECT_EQ(c.size(), 1);
     EXPECT_EQ(c.capacity(), 1);
 }
-// ---------- 23 ÒÆ¶¯¹¹Ôì£ºÍµ£¬²»¸´ÖÆ ----------
+// ---------- 23 ç§»åŠ¨æ„é€ ï¼šå·ï¼Œä¸å¤åˆ¶ ----------
 TEST(MyVector, MoveConstructorStealsOwnership) {
     MyVector<Tracked> a;
     a.push_back(Tracked{});               // alive 1
     MyVector<Tracked> b(std::move(a));
-    EXPECT_EQ(Tracked::alive, 1) << " ÒÆ¶¯²»Ó¦¸´ÖÆÔªËØ£¨alive ²»ÄÜ·­±¶£©";
+    EXPECT_EQ(Tracked::alive, 1) << " ç§»åŠ¨ä¸åº”å¤åˆ¶å…ƒç´ ï¼ˆalive ä¸èƒ½ç¿»å€ï¼‰";
     EXPECT_EQ(b.size(), 1);
     EXPECT_EQ(b.capacity(), 1);
-    EXPECT_EQ(a.size(), 0) << "Ô´±»ÖÃ¿Õ";
+    EXPECT_EQ(a.size(), 0) << "æºè¢«ç½®ç©º";
     EXPECT_EQ(a.capacity(), 0);
     EXPECT_EQ(a.data(), nullptr);
     EXPECT_TRUE(b.data() != nullptr);
 }
-// ---------- 24 ÒÆ¶¯¸³Öµ£ºÊÍ·Å×Ô¼ºµÄ¾É»º³åÇø + ½Ó¹Ü ----------
+// ---------- 24 ç§»åŠ¨èµ‹å€¼ï¼šé‡Šæ”¾è‡ªå·±çš„æ—§ç¼“å†²åŒº + æ¥ç®¡ ----------
 TEST(MyVector, MoveAssignmentReleasesOldBuffer) {
     MyVector<Tracked> a;
     a.push_back(Tracked{});
@@ -259,106 +259,106 @@ TEST(MyVector, MoveAssignmentReleasesOldBuffer) {
     c.push_back(Tracked{});               // alive 2
     EXPECT_EQ(Tracked::alive, 2);
     c = std::move(a);
-    EXPECT_EQ(Tracked::alive, 1) << " c µÄ¾É»º³åÇø±»ÊÍ·Å£¬Ö»Ê£½Ó¹ÜµÄ 1 ¸ö";
+    EXPECT_EQ(Tracked::alive, 1) << " c çš„æ—§ç¼“å†²åŒºè¢«é‡Šæ”¾ï¼Œåªå‰©æ¥ç®¡çš„ 1 ä¸ª";
     EXPECT_EQ(c.size(), 1);
     EXPECT_EQ(a.size(), 0);
     EXPECT_EQ(a.data(), nullptr);
     EXPECT_TRUE(c.data() != nullptr);
 }
-// ---------- 25 Îö¹¹ÊÍ·Å¸É¾» ----------
+// ---------- 25 ææ„é‡Šæ”¾å¹²å‡€ ----------
 TEST(MyVector, DestructionReleasesEverything) {
     ASSERT_EQ(Tracked::alive, 0);
     {
         MyVector<Tracked> v;
         for (int i = 0; i < 10; ++i) v.push_back(Tracked{});
         EXPECT_EQ(Tracked::alive, (int)v.capacity())
-            << "ÄãµÄÊµÏÖ new T[cap]£ºalive Ó¦µÈÓÚ capacity";
+            << "ä½ çš„å®ç° new T[cap]ï¼šalive åº”ç­‰äº capacity";
     }
-    EXPECT_EQ(Tracked::alive, 0) << " ÈİÆ÷Ïú»ÙºóÒ»¸ö¶¼²»ÄÜÊ£";
-    EXPECT_GT(Tracked::destroyed, 0) << "Ö¤Ã÷Îö¹¹º¯ÊıÕæµÄ±»µ÷ÓÃ¹ı";
+    EXPECT_EQ(Tracked::alive, 0) << " å®¹å™¨é”€æ¯åä¸€ä¸ªéƒ½ä¸èƒ½å‰©";
+    EXPECT_GT(Tracked::destroyed, 0) << "è¯æ˜ææ„å‡½æ•°çœŸçš„è¢«è°ƒç”¨è¿‡";
 }
-// ---------- 26 °Ñ"È«Á¿¹¹Ôì"Õâ¸öÉè¼Æ¾ö²ß¶¤½ø²âÊÔ ----------
-TEST(MyVector, AliveEqualsCapacityAfterGrowth) {     // ¹Ø¼ü
+// ---------- 26 æŠŠ"å…¨é‡æ„é€ "è¿™ä¸ªè®¾è®¡å†³ç­–é’‰è¿›æµ‹è¯• ----------
+TEST(MyVector, AliveEqualsCapacityAfterGrowth) {     // å…³é”®
     MyVector<Tracked> v;
     EXPECT_EQ(Tracked::alive, 0);
     v.reserve(10);
-    EXPECT_EQ(Tracked::alive, 10) << " new T[10] »á°Ñ 10 ¸ö²ÛÎ»È«²¿¹¹Ôì";
+    EXPECT_EQ(Tracked::alive, 10) << " new T[10] ä¼šæŠŠ 10 ä¸ªæ§½ä½å…¨éƒ¨æ„é€ ";
     EXPECT_EQ((std::size_t)Tracked::alive, v.capacity());
     v.push_back(Tracked{});
     EXPECT_EQ(v.size(), 1);
-    EXPECT_EQ((std::size_t)Tracked::alive, v.capacity()) << "²»±äÊ½£ºalive == capacity()";
+    EXPECT_EQ((std::size_t)Tracked::alive, v.capacity()) << "ä¸å˜å¼ï¼šalive == capacity()";
     v.push_back(Tracked{});
     EXPECT_EQ(v.size(), 2);
     EXPECT_EQ((std::size_t)Tracked::alive, v.capacity());
 }
-// ---------- 27 ·ÇÆ½·²ÀàĞÍ£¨×¨×¥ memcpy Àà´íÎó£©----------
-TEST(MyVector, NonTrivialElementType) {              // ¹Ø¼ü
+// ---------- 27 éå¹³å‡¡ç±»å‹ï¼ˆä¸“æŠ“ memcpy ç±»é”™è¯¯ï¼‰----------
+TEST(MyVector, NonTrivialElementType) {              // å…³é”®
     MyVector<std::string> v;
     for (int i = 0; i < 8; ++i)
-        v.push_back(std::string("s") + std::to_string(i));   // »á´¥·¢À©Èİ
+        v.push_back(std::string("s") + std::to_string(i));   // ä¼šè§¦å‘æ‰©å®¹
     EXPECT_EQ(v.size(), 8);
     for (int i = 0; i < 8; ++i)
-        EXPECT_EQ(v[i], "s" + std::to_string(i)) << "À©Èİºó string ÄÚÈİ±ØĞëÍêºÃ";
-    MyVector<std::string> w(v);            // Éî¿½±´
+        EXPECT_EQ(v[i], "s" + std::to_string(i)) << "æ‰©å®¹å string å†…å®¹å¿…é¡»å®Œå¥½";
+    MyVector<std::string> w(v);            // æ·±æ‹·è´
     EXPECT_EQ(w.size(), 8);
     EXPECT_NE(w.data(), v.data());
     w[0] = "changed";
-    EXPECT_EQ(v[0], "s0") << " Á½¸öÈİÆ÷±ØĞë»¥Ïà¶ÀÁ¢";
-    v.push_back("extra");                  // ×ß T&& ÖØÔØ£¨ÁÙÊ±Á¿£©
-    EXPECT_EQ(w.size(), 8) << "w ²»ÊÜÓ°Ïì";
-    EXPECT_EQ(v[7], "s7") << "À©Èİºó¾É string Î´±»ÆÆ»µ";
+    EXPECT_EQ(v[0], "s0") << " ä¸¤ä¸ªå®¹å™¨å¿…é¡»äº’ç›¸ç‹¬ç«‹";
+    v.push_back("extra");                  // èµ° T&& é‡è½½ï¼ˆä¸´æ—¶é‡ï¼‰
+    EXPECT_EQ(w.size(), 8) << "w ä¸å—å½±å“";
+    EXPECT_EQ(v[7], "s7") << "æ‰©å®¹åæ—§ string æœªè¢«ç ´å";
 }
-// ---------- 28 Ç¶Ì×ÈİÆ÷ ----------
+// ---------- 28 åµŒå¥—å®¹å™¨ ----------
 TEST(MyVector, NestedVectorCopies) {
     MyVector<MyVector<int>> outer;
     MyVector<int> inner;
     inner.push_back(1);
     inner.push_back(2);
-    outer.push_back(inner);                // ÄÚ²ãÒ²±ØĞëÊÇÉî¿½±´
+    outer.push_back(inner);                // å†…å±‚ä¹Ÿå¿…é¡»æ˜¯æ·±æ‹·è´
     EXPECT_EQ(outer.size(), 1);
     EXPECT_EQ(outer[0].size(), 2);
     EXPECT_EQ(outer[0][0], 1);
     outer[0][0] = 99;
-    EXPECT_EQ(inner[0], 1) << " ÄÚ²ã¶ÀÁ¢";
+    EXPECT_EQ(inner[0], 1) << " å†…å±‚ç‹¬ç«‹";
     MyVector<MyVector<int>> copy(outer);
     EXPECT_EQ(copy[0].size(), 2);
     EXPECT_EQ(copy[0][0], 99);
 }
-// ---------- 29 Ìî³ä¹¹Ôì£¨Äã¸ÕĞŞºÃ new T[len] µÄÄÇ¸ö£©----------
+// ---------- 29 å¡«å……æ„é€ ï¼ˆä½ åˆšä¿®å¥½ new T[len] çš„é‚£ä¸ªï¼‰----------
 TEST(MyVector, FillConstructor) {
     MyVector<int> v(3, 7);
-    EXPECT_EQ(v.size(), 3) << " ¹¹ÔìÁË len ¸öÔªËØ£¬size ±ØĞëÊÇ 3";
+    EXPECT_EQ(v.size(), 3) << " æ„é€ äº† len ä¸ªå…ƒç´ ï¼Œsize å¿…é¡»æ˜¯ 3";
     EXPECT_EQ(v.capacity(), 3);
     for (int i = 0; i < 3; ++i) EXPECT_EQ(v[i], 7);
 }
-// ---------- 30 ÓÒÖµÖØÔØÕæµÄÔÚÒÆ¶¯£¨¾«È·°æ£©----------
-TEST(MyVector, PushBackRvalueUsesMove) {             // ¹Ø¼ü
+// ---------- 30 å³å€¼é‡è½½çœŸçš„åœ¨ç§»åŠ¨ï¼ˆç²¾ç¡®ç‰ˆï¼‰----------
+TEST(MyVector, PushBackRvalueUsesMove) {             // å…³é”®
     MyVector<MoveTracked> v;
-    v.reserve(4);                      //  ÏÈ±¸ºÃ¿Õ¼ä£ºÏû³ıÀ©Èİ´øÀ´µÄ¸ÉÈÅ¿½±´
-    MoveTracked::copies = 0;           //  ÇåÁã·ÅÔÚ reserve Ö®ºó
+    v.reserve(4);                      //  å…ˆå¤‡å¥½ç©ºé—´ï¼šæ¶ˆé™¤æ‰©å®¹å¸¦æ¥çš„å¹²æ‰°æ‹·è´
+    MoveTracked::copies = 0;           //  æ¸…é›¶æ”¾åœ¨ reserve ä¹‹å
     MoveTracked::moves = 0;
 
-    v.push_back(MoveTracked{});        // ÁÙÊ±Á¿£¨ÓÒÖµ£©¡ú T&& ÖØÔØ
-    EXPECT_EQ(MoveTracked::moves, 1) << " ÓÒÖµ±ØĞë²úÉúÇ¡ºÃÒ»´Î move";
-    EXPECT_EQ(MoveTracked::copies, 0) << " ÓÒÖµÂ·¾¶²»¸ÃÓĞÈÎºÎ copy";
+    v.push_back(MoveTracked{});        // ä¸´æ—¶é‡ï¼ˆå³å€¼ï¼‰â†’ T&& é‡è½½
+    EXPECT_EQ(MoveTracked::moves, 1) << " å³å€¼å¿…é¡»äº§ç”Ÿæ°å¥½ä¸€æ¬¡ move";
+    EXPECT_EQ(MoveTracked::copies, 0) << " å³å€¼è·¯å¾„ä¸è¯¥æœ‰ä»»ä½• copy";
 
     MoveTracked lv;
-    v.push_back(lv);                   // ×óÖµ ¡ú const T& ÖØÔØ
-    EXPECT_EQ(MoveTracked::copies, 1) << " ×óÖµ±ØĞë²úÉúÇ¡ºÃÒ»´Î copy";
-    EXPECT_EQ(MoveTracked::moves, 1) << "×óÖµ²»¸Ã²úÉúĞÂµÄ move";
+    v.push_back(lv);                   // å·¦å€¼ â†’ const T& é‡è½½
+    EXPECT_EQ(MoveTracked::copies, 1) << " å·¦å€¼å¿…é¡»äº§ç”Ÿæ°å¥½ä¸€æ¬¡ copy";
+    EXPECT_EQ(MoveTracked::moves, 1) << "å·¦å€¼ä¸è¯¥äº§ç”Ÿæ–°çš„ move";
     EXPECT_EQ(v.size(), 2);
 }
-// ---------- 31 const ¶ÔÏóÉÏµÄµü´úÆ÷ / ·¶Î§ for£¨×¨×¥"Â© const °æ"£©----------
-TEST(MyVector, BeginEndOnConstObject) {              // ¹Ø¼ü
+// ---------- 31 const å¯¹è±¡ä¸Šçš„è¿­ä»£å™¨ / èŒƒå›´ forï¼ˆä¸“æŠ“"æ¼ const ç‰ˆ"ï¼‰----------
+TEST(MyVector, BeginEndOnConstObject) {              // å…³é”®
     MyVector<int> v;
     v.push_back(1);
     v.push_back(2);
     const MyVector<int>& cv = v;
     EXPECT_EQ(cv.end() - cv.begin(), 2);
     static_assert(std::is_same<decltype(cv.begin()), const int*>::value,
-        "const °æ begin Ó¦·µ»Ø const T*");
+        "const ç‰ˆ begin åº”è¿”å› const T*");
     int sum = 0;
-    for (const auto& x : cv) sum += x;     //  const ¶ÔÏóÉÏµÄ·¶Î§ for ±ØĞëÄÜ±àÒë
+    for (const auto& x : cv) sum += x;     //  const å¯¹è±¡ä¸Šçš„èŒƒå›´ for å¿…é¡»èƒ½ç¼–è¯‘
     EXPECT_EQ(sum, 3);
 }
 
