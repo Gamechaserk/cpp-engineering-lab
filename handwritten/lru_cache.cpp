@@ -1,4 +1,6 @@
-﻿#include <iostream>
+﻿#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#include <iostream>
 #include <unordered_map>
 #include <mutex>
 
@@ -17,7 +19,14 @@ class LRUCache {
 public:
     LRUCache(const LRUCache&) = delete; 
     LRUCache& operator=(const LRUCache&) = delete;
-    ~LRUCache(){}//析构待完善
+    ~LRUCache(){
+        for (Node* cur = guard->next; cur != guard;) {
+            Node* ptr = cur->next;
+            delete cur;
+            cur = ptr;
+        }
+        delete guard;
+    }
     explicit LRUCache(int capacity):m_capacity(capacity){
         guard = new Node();
         guard->next = guard;
@@ -25,7 +34,7 @@ public:
     }
     int  get(int key) {
         //std::lock_guard<std::mutex> lock(m_mutex);
-        Node* node = getnode(key);
+        Node* node = findAndPromote(key);
         if (node) {
             return node->m_value;
         }
@@ -33,12 +42,13 @@ public:
     }// 未命中返回 -1
     void put(int key, int value) {
         //std::lock_guard<std::mutex> lock(m_mutex);
-        Node* node = getnode(key);
+        Node* node = findAndPromote(key);
         if (node) {
             node->m_value = value;
         }
         else {
             if (hashmap.size() >= m_capacity) {
+                if (m_capacity == 0) return;
                 Node* back_node = guard->prev;
                 remove(back_node);
                 hashmap.erase(back_node->m_key);
@@ -56,7 +66,7 @@ public:
     //}
 
 private:
-    Node* getnode(int key){
+    Node* findAndPromote(int key){
         auto it = hashmap.find(key);
         if (it != hashmap.end()) {
             remove(it->second);
@@ -66,7 +76,6 @@ private:
         return nullptr;
     }
     void remove(Node* node) {
-        if (m_capacity == 0) return;
         node->prev->next = node->next;
         node->next->prev = node->prev;
         
@@ -85,25 +94,57 @@ private:
 };
 
 int main() {
+    // ── 自测用例（2026-10-23 起测试由教练产出；本文件是手撕练习件，用例内嵌在 main）──
 
-    /*int failures = 0;
+    int failures = 0;
     auto check = [&failures](const char* name, int got, int want) {
         const bool ok = (got == want);
         if (!ok) { ++failures; }
         std::cout << (ok ? "OK  " : "FAIL") << " | " << name
             << " | got=" << got << " want=" << want << "\n";
-        };*/
-    // 用法：check("get(1) 命中", lru.get(1), 1);
+        };
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-    LRUCache lru(2);
-    lru.put(1, 1);
-    lru.put(2, 2);
-    std::cout<<"lru.get(1)=" << lru.get(1) << ",预期：1" << std::endl;
-    lru.put(3, 3);
-    std::cout << "lru.get(2)=" << lru.get(2) << ",预期：-1" << std::endl;
-    lru.put(4, 4);
-    std::cout << "lru.get(1)=" << lru.get(1) << ",预期：-1" << std::endl;
-    std::cout << "lru.get(3)=" << lru.get(3) << ",预期：3" << std::endl;
-    std::cout << "lru.get(4)=" << lru.get(4) << ",预期：4" << std::endl;
-    return 0;
+    // ── 用例 1：容量 2 的经典淘汰序列 ──
+    {
+        LRUCache lru(2);
+        lru.put(1, 1);
+        lru.put(2, 2);
+        check("get(1) 命中", lru.get(1), 1);                        // 1 被提升为最近使用
+        lru.put(3, 3);                                             // ⇒ 淘汰最久未用的 2
+        check("get(2) 未命中（已被 3 淘汰）", lru.get(2), -1);
+        lru.put(4, 4);                                             // 此时 LRU 是 1 ⇒ 淘汰 1
+        check("get(1) 未命中（已被 4 淘汰）", lru.get(1), -1);
+        check("get(3) 命中", lru.get(3), 3);
+        check("get(4) 命中", lru.get(4), 4);
+    }
+    // ── 用例 2：容量 0 —— put 必须【静默忽略】，且绝不能走到 delete guard（否则 UAF）──
+    {
+        LRUCache lru(0);
+        lru.put(1, 1);
+        // ★ 教训：字符串字面量里只能放【执行字符集(936)】可表示的字符。
+        //   `⇒`(U+21D2) 不在 GBK 里 ⇒ warning C4566，且运行时被降级成 `?`。
+        //   注释里随便写 ⇒ ★ → ≈ 都没事（注释在预处理前就被剥掉了），字符串里不行。
+        check("容量 0：put 后仍为空 => get(1) 未命中", lru.get(1), -1);
+    }
+    // ── 用例 3：容量 1 —— 每次 put 新 key 都必须挤掉上一个 ──
+    {
+        LRUCache lru(1);
+        lru.put(1, 1);
+        check("容量 1：get(1) 命中", lru.get(1), 1);
+        lru.put(2, 2);
+        check("容量 1：get(1) 未命中（已被 2 挤掉）", lru.get(1), -1);
+        check("容量 1：get(2) 命中", lru.get(2), 2);
+    }
+    // ── 用例 4：重复 put 同一 key ⇒ 只更新值，不新建节点、不触发淘汰 ──
+    {
+        LRUCache lru(1);
+        lru.put(1, 1);
+        lru.put(1, 2);                                             // 同一个 key：只改值
+        check("重复 put：get(1) 应是最新值 2（不是先写的 1）", lru.get(1), 2);
+        lru.put(1, 3);
+        check("重复 put 后 key 1 仍在：get(1) == 3", lru.get(1), 3);
+        check("重复 put 不得把 key 挤成别的：get(2) 未命中", lru.get(2), -1);
+    }
+    return (failures == 0) ? 0 : 1;
 }

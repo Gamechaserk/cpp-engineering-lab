@@ -102,6 +102,7 @@ gtest_discover_tests(vector_tests)
 # ── 9) U04：渲染器核心（静态库：给 exe 和测试共用）──
 add_library(renderer_core STATIC
     renderer/src/render/Framebuffer.cpp
+    renderer/src/render/Rasterizer.cpp
     renderer/src/io/PpmWriter.cpp)
 
 # PUBLIC：库自己要用，链接它的目标【也继承】→ 编译选项/宏不会分叉

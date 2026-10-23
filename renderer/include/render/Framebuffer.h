@@ -4,7 +4,7 @@
 #include "math/Vec3.h"
 
 // 约定：Framebuffer(0,0) = 图像【左上角】；行号向下增大（与 PPM 一致）
-//       数学库的 y 轴【向上】→ U05 视口变换时需做一次 y 翻转
+//       数学库的 y 轴【向上】→ U01 视口变换时需做一次 y 翻转
 class Framebuffer {
 public:
     Framebuffer(int width, int height);
