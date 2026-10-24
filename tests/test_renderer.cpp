@@ -72,6 +72,7 @@ TEST(Math, LayoutIsZeroOverhead) {
 }
 
 // ── Rasterizer：B2-U01 视口变换 + 重心坐标光栅化（测试由教练产出，2026-10-23 规则变更）──
+//  ★ U02（10-24）起：顶点由 Vertex2D 升级为 Vertex3D（多一个 z），光栅化带深度测试
 //  期望值一律【手算 / 独立定理】写死，不从实现里抄公式（K13.18）
 //  ★ 像素个数的【精确】期望值用 Pick 定理独立算出（与实现无任何共同公式）：
 //      闭合约定（w >= 0，含边界像素）下：像元数 = I + B
@@ -92,6 +93,11 @@ Framebuffer makeBlank101() {
     }
     return fb;
 }
+
+// U01 那些"平铺"用例统一用的 z：任意落在 NDC [-1,1] 内的值都行
+// （构造函数把深度初始化成 FAR_DEPTH ⇒ 第一次绘制时每个被覆盖的像素都能通过深度测试
+//   ⇒ 写入像素数 == 覆盖像素数，Pick 定理那 3281 才成立）
+constexpr float kFlatZ = -0.5f;
 
 }  // namespace
 
@@ -132,7 +138,7 @@ TEST(Rasterizer, TriangleCoverageMatchesPickTheoremExactly) {
     const Vec3 white(1.0f, 1.0f, 1.0f);
 
     // NDC → 像素：A(0,0.8)→(50,10)   B(-0.8,-0.8)→(10,90)   C(0.8,-0.8)→(90,90)
-    const Vertex2D a{ 0.0f, 0.8f }, b{ -0.8f, -0.8f }, c{ 0.8f, -0.8f };
+    const Vertex3D a{ 0.0f, 0.8f, kFlatZ }, b{ -0.8f, -0.8f, kFlatZ }, c{ 0.8f, -0.8f, kFlatZ };
     const int written = rasterizeTriangle(fb, a, b, c, white);
 
     // 期望值独立手算（Pick 定理）：
@@ -153,7 +159,7 @@ TEST(Rasterizer, TriangleCoverageMatchesPickTheoremExactly) {
 }
 TEST(Rasterizer, WindingOrderDoesNotChangeCoverage) {
     const Vec3 white(1.0f, 1.0f, 1.0f);
-    const Vertex2D a{ 0.0f, 0.8f }, b{ -0.8f, -0.8f }, c{ 0.8f, -0.8f };
+    const Vertex3D a{ 0.0f, 0.8f, kFlatZ }, b{ -0.8f, -0.8f, kFlatZ }, c{ 0.8f, -0.8f, kFlatZ };
 
     Framebuffer fb1 = makeBlank101();
     const int cw = rasterizeTriangle(fb1, a, b, c, white);     // 屏幕空间：CW
@@ -176,12 +182,12 @@ TEST(Rasterizer, DegenerateTriangleWritesNothing) {
 
     // ① 三点共线（NDC 的 y=x 对角线）→ 像素 (0,100) (50,50) (100,0)
     Framebuffer fb1 = makeBlank101();
-    const Vertex2D p{ -1.0f, -1.0f }, q{ 0.0f, 0.0f }, r{ 1.0f, 1.0f };
+    const Vertex3D p{ -1.0f, -1.0f, kFlatZ }, q{ 0.0f, 0.0f, kFlatZ }, r{ 1.0f, 1.0f, kFlatZ };
     EXPECT_EQ(rasterizeTriangle(fb1, p, q, r, white), 0);
 
     // ② 三点映射到同一像素 → 面积在【整数域】精确为 0（选 int area 的回报：不需要 eps）
     Framebuffer fb2(256, 256);
-    const Vertex2D s{ 0.0f, 0.0f }, t{ 0.0f, 0.0f }, u{ 0.0f, 0.0f };
+    const Vertex3D s{ 0.0f, 0.0f, kFlatZ }, t{ 0.0f, 0.0f, kFlatZ }, u{ 0.0f, 0.0f, kFlatZ };
     EXPECT_EQ(rasterizeTriangle(fb2, s, t, u, white), 0);
 }
 TEST(Rasterizer, OffScreenTrianglesAreClippedByBoundingBoxNotByMapping) {
@@ -189,21 +195,101 @@ TEST(Rasterizer, OffScreenTrianglesAreClippedByBoundingBoxNotByMapping) {
 
     // ① 完全在右侧屏外：像素 x = 110 / 120 / 130 ⇒ clamp 后 x0 > x1 ⇒ 空包围盒
     Framebuffer fb1 = makeBlank101();
-    const Vertex2D a{ 1.2f, -0.5f }, b{ 1.4f, 0.5f }, c{ 1.6f, 0.0f };
+    const Vertex3D a{ 1.2f, -0.5f, kFlatZ }, b{ 1.4f, 0.5f, kFlatZ }, c{ 1.6f, 0.0f, kFlatZ };
     EXPECT_EQ(rasterizeTriangle(fb1, a, b, c, white), 0);
 
     // ② 完全在左侧屏外：像素 x 全为负 ⇒ 同样得到空包围盒
     Framebuffer fb2 = makeBlank101();
-    const Vertex2D d{ -1.6f, -0.5f }, e{ -1.4f, 0.5f }, f{ -1.2f, 0.0f };
+    const Vertex3D d{ -1.6f, -0.5f, kFlatZ }, e{ -1.4f, 0.5f, kFlatZ }, f{ -1.2f, 0.0f, kFlatZ };
     EXPECT_EQ(rasterizeTriangle(fb2, d, e, f, white), 0);
 
     // ③ 部分在屏外：必须被 clamp 且【ASan 不报越界】
     //    若把 clamp 删掉，这里立刻变成 heap-buffer-overflow，Debug 构建下必然失败
     Framebuffer fb3 = makeBlank101();
-    const Vertex2D g{ 0.0f, 0.5f }, h{ -3.0f, -3.0f }, i{ 3.0f, -3.0f };
+    const Vertex3D g{ 0.0f, 0.5f, kFlatZ }, h{ -3.0f, -3.0f, kFlatZ }, i{ 3.0f, -3.0f, kFlatZ };
     const int written = rasterizeTriangle(fb3, g, h, i, white);
     EXPECT_GT(written, 0);
     EXPECT_LE(written, 101 * 101);
+}
+
+// ── Z-Buffer：B2-U02 深度测试（测试由教练产出，2026-10-24）──
+//  ★ 期望值一律【手算】写死，不从实现里抄（K13.18）
+//  ★ 场景设计纪律：两个三角形【不共面】且各自 z 为常量 ⇒ 没有深度完全相等的像素
+//    ⇒ "交换绘制顺序结果不变"在本场景里【精确】成立（共面 / 共享边的平局问题见 Rasterizer.h 契约③）
+//  ★ 反面教材：三个顶点 z【相同】时，"权重配错"这类 bug 完全不可观测 —— 常量 z 的 demo 正是如此
+
+TEST(ZBuffer, DepthBufferStartsAtFarDepth) {
+    // ★ 不变式：构造函数必须把 m_depth 【填】成 FAR_DEPTH（只 resize 会得到 0.0f）
+    //   若初值是 0：z > 0 的片元全被拒 ⇒ 图缺一半；且上面 Pick 定理那条（written == 3281）会【静默】失败
+    Framebuffer fb(101, 101);
+
+    EXPECT_FLOAT_EQ(fb.depthAt(0, 0), Framebuffer::FAR_DEPTH);
+    EXPECT_FLOAT_EQ(fb.depthAt(100, 100), Framebuffer::FAR_DEPTH);
+    EXPECT_FLOAT_EQ(fb.depthAt(50, 50), Framebuffer::FAR_DEPTH);   // 中间也要（不能只初始化边角）
+    EXPECT_LT(-1.0f, Framebuffer::FAR_DEPTH);                      // "最远"的定义：比任何合法 NDC z 都大
+}
+
+TEST(ZBuffer, DepthIsInterpolatedWithTheMatchingBarycentricWeights) {
+    // ★ 三个顶点的 z 【必须互不相同】，否则"权重配错"不可观测
+    //   像素：A(50,50) B(100,50) C(50,100)   ← NDC：A(0,0) B(1,0) C(0,-1)
+    //   有符号面积 = (50,0)×(0,50) = 2500
+    //   在 AB 中点像素 (75,50)：λ_A = 0.5、λ_B = 0.5、λ_C = 0
+    //   ⇒ 期望 z = 0.5·(-0.1) + 0.5·(-0.3) + 0·(-0.5) = -0.2
+    Framebuffer fb(101, 101);
+    const Vec3 white(1.0f, 1.0f, 1.0f);
+    const Vertex3D a{ 0.0f, 0.0f, -0.1f }, b{ 1.0f, 0.0f, -0.3f }, c{ 0.0f, -1.0f, -0.5f };
+
+    EXPECT_GT(rasterizeTriangle(fb, a, b, c, white), 0);
+
+    EXPECT_NEAR(fb.depthAt(75, 50), -0.2f, 1e-5f);    // ★ 权重循环错位会得到 -0.4
+    EXPECT_NEAR(fb.depthAt(50, 50), -0.1f, 1e-5f);    // 顶点 A 处 = a.z
+    EXPECT_NEAR(fb.depthAt(100, 50), -0.3f, 1e-5f);   // 顶点 B 处 = b.z
+    EXPECT_NEAR(fb.depthAt(50, 100), -0.5f, 1e-5f);   // 顶点 C 处 = c.z
+}
+
+TEST(ZBuffer, NearerTriangleWinsAndDrawOrderDoesNotMatter) {
+    // 远：大三角形（像素 A(50,10) B(10,90) C(90,90)，z = +0.5）
+    // 近：小三角形（像素 D(50,50) E(25,25) F(75,25)，z = -0.5）
+    // 二者在 y=30 处确实交叠：远覆盖 x ∈ [40,60]，近覆盖 x ∈ [30,70] ⇒ 像素 (50,30) 同时在两个里
+    const Vec3 white(1.0f, 1.0f, 1.0f), red(1.0f, 0.0f, 0.0f);
+    const Vertex3D a{ 0.0f, 0.8f, 0.5f }, b{ -0.8f, -0.8f, 0.5f }, c{ 0.8f, -0.8f, 0.5f };
+    const Vertex3D d{ 0.0f, 0.0f, -0.5f }, e{ -0.5f, 0.5f, -0.5f }, f{ 0.5f, 0.5f, -0.5f };
+
+    Framebuffer farFirst(101, 101), nearFirst(101, 101);
+    rasterizeTriangle(farFirst, a, b, c, white);     // 顺序 A：先远后近
+    rasterizeTriangle(farFirst, d, e, f, red);
+    rasterizeTriangle(nearFirst, d, e, f, red);      // 顺序 B：先近后远
+    rasterizeTriangle(nearFirst, a, b, c, white);
+
+    // ── ★ 前提断言：少了这两条，"近者胜"可能只是空话（假绿四变体之"前提断言缺失"）──
+    EXPECT_FLOAT_EQ(farFirst.at(50, 30).y, 0.0f);    // 交叠区 ⇒ 红（近）赢：G 分量 0（白是 1）
+    EXPECT_FLOAT_EQ(farFirst.at(50, 20).y, 1.0f);    // 只被远覆盖处 ⇒ 仍是白
+
+    // ── 顺序无关：逐像素比对，不同像素数必须为 0（二值判据 ⇒ 可进 ctest、可回归）──
+    int diff = 0;
+    for (int y = 0; y < 101; ++y) {
+        for (int x = 0; x < 101; ++x) {
+            const Vec3& p = farFirst.at(x, y);
+            const Vec3& q = nearFirst.at(x, y);
+            if (p.x != q.x || p.y != q.y || p.z != q.z) { ++diff; }
+        }
+    }
+    EXPECT_EQ(diff, 0);
+    EXPECT_FLOAT_EQ(nearFirst.at(50, 30).y, 0.0f);   // 换顺序后交叠区仍是红
+}
+
+TEST(ZBuffer, ClearResetsDepthAsWellAsColor) {
+    const Vec3 white(1.0f, 1.0f, 1.0f), black(0.0f, 0.0f, 0.0f);
+    const Vertex3D a{ 0.0f, 0.0f, -0.5f }, b{ 1.0f, 0.0f, -0.5f }, c{ 0.0f, -1.0f, -0.5f };
+
+    Framebuffer fb(101, 101);
+    rasterizeTriangle(fb, a, b, c, white);
+    EXPECT_NEAR(fb.depthAt(50, 50), -0.5f, 1e-5f);
+    EXPECT_FLOAT_EQ(fb.at(50, 50).x, 1.0f);
+
+    fb.clear(black);
+    EXPECT_FLOAT_EQ(fb.at(50, 50).x, 0.0f);                        // 颜色被清
+    EXPECT_FLOAT_EQ(fb.depthAt(50, 50), Framebuffer::FAR_DEPTH);   // ★ 深度也必须回到最远
 }
 
 int main(int argc, char** argv) {

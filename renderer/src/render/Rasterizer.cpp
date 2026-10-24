@@ -12,8 +12,8 @@ int toScreenY(float ndcY, int height) {
     return static_cast<int>(std::roundf(t * (height - 1)));
 }
 
-int rasterizeTriangle(Framebuffer& fb, const Vertex2D& a, const Vertex2D& b,
-    const Vertex2D& c, const Vec3& color) {
+int rasterizeTriangle(Framebuffer& fb, const Vertex3D& a, const Vertex3D& b,
+    const Vertex3D& c, const Vec3& color) {
     // ① 三点 → 像素坐标（先取整：之后叉积全是【整数】运算 ⇒ inside test 无浮点误差）
     const int ax = toScreenX(a.x, fb.width());  const int ay = toScreenY(a.y, fb.height());
     const int bx = toScreenX(b.x, fb.width());  const int by = toScreenY(b.y, fb.height());
@@ -47,10 +47,13 @@ int rasterizeTriangle(Framebuffer& fb, const Vertex2D& a, const Vertex2D& b,
             const float w0 = inv * static_cast<float>(e0);
             const float w1 = inv * static_cast<float>(e1);
             const float w2 = inv * static_cast<float>(e2);
+            const float z = w0 * c.z + w1 * a.z + w2 * b.z;
 
             if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                fb.set(x, y, color);
-                ++written;
+                if (z < fb.depthAt(x, y)) {
+                    fb.setDepth(x, y, z, color);
+                    ++written;
+                }
             }
         }
     }
