@@ -19,9 +19,9 @@ static void drawBlock(Framebuffer& fb, int cx, int cy, const Vec3& color, int r 
 int main() {
     _mkdir("output");                       // 目录已存在时会返回 -1，忽略即可
     const int W = 256, H = 256;
-    const Vec3 white(1.0f, 1.0f, 0.5f), black(0.0f, 0.0f, 0.5f), red(1.0f, 0.0f, 0.5f);
-    const Vertex3D A{ 0.0f, 0.9f, -0.5f }, B{ -0.9f, -0.9f, -0.5f }, C{ 0.9f, -0.9f, -0.5f };
-    const Vertex3D D{ 0.0f, 0.0f, 0.0f }, E{ -0.5f, 0.5f, 0.0f }, F{ 0.5f, 0.5f, 0.0f };
+    const Vec3 white(1.0f, 1.0f, 1.0f), black(0.0f, 0.0f, 0.0f), red(1.0f, 0.0f, 0.0f);
+    const Vertex3D A{ 0.0f, 0.9f, 0.5f }, B{ -0.9f, -0.9f, 0.5f }, C{ 0.9f, -0.9f, 0.5f };
+    const Vertex3D D{ 0.0f, 0.0f, -0.5f }, E{ -0.5f, 0.5f, -0.5f }, F{ 0.5f, 0.5f, -0.5f };
 
     //第一项
     {
