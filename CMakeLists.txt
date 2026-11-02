@@ -101,8 +101,10 @@ gtest_discover_tests(vector_tests)
 
 # ── 9) U04：渲染器核心（静态库：给 exe 和测试共用）──
 add_library(renderer_core STATIC
+    renderer/src/math/Mat4.cpp           # ★ 前置 0：Mat4 / Vec4
     renderer/src/render/Framebuffer.cpp
     renderer/src/render/Rasterizer.cpp
+    renderer/src/render/Shading.cpp      # ★ U03：光照 + 背面剔除
     renderer/src/io/PpmWriter.cpp)
 
 # PUBLIC：库自己要用，链接它的目标【也继承】→ 编译选项/宏不会分叉
@@ -148,3 +150,21 @@ target_link_libraries(lru_cache PRIVATE
     Threads::Threads)    # std::mutex 在 Linux 上要 pthread；Windows 上展开为空
 
 smartptr_copy_asan_runtime(lru_cache)
+
+# ── 14) U03：光照（Blinn-Phong）与背面剔除测试（8 个 gtest 用例）──
+add_executable(shading_tests tests/test_shading.cpp)
+target_link_libraries(shading_tests PRIVATE
+    renderer_core        # ★ 自动继承 lab_options / lab_headers / renderer/include
+    GTest::gtest)        # 同样自己写 main（CRT 泄漏检查）
+
+smartptr_copy_asan_runtime(shading_tests)   # 必须在 gtest_discover_tests 之前
+gtest_discover_tests(shading_tests)
+
+# ── 15) 前置 0：Mat4 / Vec4 测试（12 个 gtest 用例）──
+add_executable(mat4_tests tests/test_mat4.cpp)
+target_link_libraries(mat4_tests PRIVATE
+    renderer_core        # ★ 自动继承 lab_options / lab_headers / renderer/include
+    GTest::gtest)        # 同样自己写 main（CRT 泄漏检查）
+
+smartptr_copy_asan_runtime(mat4_tests)   # 必须在 gtest_discover_tests 之前
+gtest_discover_tests(mat4_tests)
