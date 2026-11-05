@@ -188,3 +188,9 @@ target_link_libraries(vertpipeline_tests PRIVATE
 
 smartptr_copy_asan_runtime(vertpipeline_tests)   # 必须在 gtest_discover_tests 之前
 gtest_discover_tests(vertpipeline_tests)
+
+# ── 18) 出图工具：离线光线追踪（独立于渲染器，不参与 102 用例）──
+add_executable(cornell tools/cornell.cpp)
+target_link_libraries(cornell PRIVATE renderer_core)
+add_executable(cornell_raster tools/cornell_raster.cpp)
+target_link_libraries(cornell_raster PRIVATE renderer_core)
