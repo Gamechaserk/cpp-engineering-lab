@@ -1,5 +1,4 @@
-﻿// renderer/include/render/Rasterizer.h
-#pragma once
+﻿#pragma once
 #include "math/Vec3.h"
 #include "render/Framebuffer.h"
 

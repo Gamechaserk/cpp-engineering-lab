@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 project(SmartPtr LANGUAGES CXX)
 
 # ── 1) 去掉 MSVC Debug 默认的 /RTC1（与 ASan 不兼容）──
@@ -102,9 +102,11 @@ gtest_discover_tests(vector_tests)
 # ── 9) U04：渲染器核心（静态库：给 exe 和测试共用）──
 add_library(renderer_core STATIC
     renderer/src/math/Mat4.cpp           # ★ 前置 0：Mat4 / Vec4
+    renderer/src/scene/Camera.cpp        # ★ 前置 0：Camera
     renderer/src/render/Framebuffer.cpp
     renderer/src/render/Rasterizer.cpp
     renderer/src/render/Shading.cpp      # ★ U03：光照 + 背面剔除
+    renderer/src/render/VertPipeline.cpp  # ★ 前置 0：世界坐标 -> NDC
     renderer/src/io/PpmWriter.cpp)
 
 # PUBLIC：库自己要用，链接它的目标【也继承】→ 编译选项/宏不会分叉
@@ -168,3 +170,21 @@ target_link_libraries(mat4_tests PRIVATE
 
 smartptr_copy_asan_runtime(mat4_tests)   # 必须在 gtest_discover_tests 之前
 gtest_discover_tests(mat4_tests)
+
+# ── 16) 前置 0：Camera 测试（5 个 gtest 用例）──
+add_executable(camera_tests tests/test_camera.cpp)
+target_link_libraries(camera_tests PRIVATE
+    renderer_core        # ★ 自动继承 lab_options / lab_headers / renderer/include
+    GTest::gtest)        # 同样自己写 main（CRT 泄漏检查）
+
+smartptr_copy_asan_runtime(camera_tests)   # 必须在 gtest_discover_tests 之前
+gtest_discover_tests(camera_tests)
+
+# ── 17) 前置 0：VertPipeline 测试（6 个 gtest 用例）──
+add_executable(vertpipeline_tests tests/test_vertpipeline.cpp)
+target_link_libraries(vertpipeline_tests PRIVATE
+    renderer_core        # ★ 自动继承 lab_options / lab_headers / renderer/include
+    GTest::gtest)        # 同样自己写 main（CRT 泄漏检查）
+
+smartptr_copy_asan_runtime(vertpipeline_tests)   # 必须在 gtest_discover_tests 之前
+gtest_discover_tests(vertpipeline_tests)
